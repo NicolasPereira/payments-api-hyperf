@@ -1,22 +1,12 @@
 <!-- Sync Impact Report
-
-Version change: 2.0.0 → 2.1.0
-
+Version change: 2.1.0 → 2.2.0
 Modified principles:
-- None (all 7 principles I-VII preserved verbatim per user request).
-
-Modified sections:
-- Development Workflow & Quality Gates — preserved verbatim; noted as extended by new dedicated sections (no semantic change, reference retained).
-
-Added:
-- Pull Request Standards — formalizes PR requirements: description, Spec Kit reference, ADRs, design decisions, testing, security/data/performance/observability impacts, schema/migration disclosure, limitations/risks, CI gates, reviewer approval, no unrelated changes, enforce via CI where possible.
-- Commit Standards — Conventional Commits mandatory (type(scope): description), allowed types (feat, fix, refactor, test, docs, chore, build, ci, perf, revert), imperative English, BREAKING CHANGE via footer/! , atomic logical change, no broad git add . / git add -A, staged diff review, no generated/secrets in commits, traceability to Spec Kit task (e.g., T001 → feat(payment): ...).
-- Quality Gates — expanded merge gates: automated tests, static analysis, code style, constitution compliance, security, architectural, integration/contract tests, PR requirements, Conventional Commit requirements; feature branches from main, PRs required, direct commits to main FORBIDDEN (except emergency/admin), exception process fallback.
-
-Removed: none.
-Conflicts resolved: Commit Standards MUST supersedes previous SHOULD for Conventional Commits; PR Standards explicitly strengthens previous SHOULD/REQUIRED summary; Quality Gates detailed list extends previous summary gates within Development Workflow.
-
-Follow-up TODOs: none.
+- None (all 7 principles I-VII preserved verbatim)
+Added sections:
+- PHP-FIG Standards — MUST follow applicable PHP-FIG standards; MUST PSR-1 (basic coding) and PSR-4 (autoloading/namespaces); MUST PER Coding Style (PER-CS) as successor to PSR-12 for PHP 8.4; project conventions MUST NOT contradict PHP-FIG without explicit justification/approval; MUST PHP-CS-Fixer (style) and MUST PHPStan (static analysis/quality); only applicable PSRs required
+Removed sections:
+- None
+Follow-up TODOs: none
 -->
 
 # payments-api-hyperf Constitution
@@ -223,6 +213,26 @@ Additional infrastructure such as message brokers, queues, external PSPs, or oth
 Infrastructure implementation details such as container ports, image tags, Docker networking, and CI-specific configuration SHOULD remain documented in their respective infrastructure or deployment files rather than duplicated here.
 
 Runtime artifacts and generated dependencies MUST NOT be committed to the repository.
+
+---
+
+## PHP-FIG Standards
+
+PHP code MUST follow applicable PHP-FIG standards.
+
+The project MUST follow PSR-1 for basic coding conventions.
+
+The project MUST follow PSR-4 for autoloading and namespace organization.
+
+For coding style, the project MUST follow the PHP-FIG standard currently applicable to PHP 8.4, using PER Coding Style (PER-CS) as the evolution/successor to PSR-12.
+
+Project-specific conventions MUST NOT contradict PHP-FIG standards without explicit technical justification and approval.
+
+PHP-CS-Fixer MUST be used for automated enforcement of coding style.
+
+PHPStan MUST be used for automated enforcement of quality and static analysis.
+
+Only PSRs and standards that are actually applicable to this project are required. An exhaustive list of all existing PSRs MUST NOT be treated as mandatory.
 
 ---
 
@@ -445,4 +455,4 @@ The authoritative copy of this Constitution is:
 
 Spec Kit templates, plans, tasks, and implementation guidance MUST defer to this document when conflicts occur.
 
-**Version**: 2.1.0 | **Ratified**: 2026-08-30 | **Last Amended**: 2026-08-30
+**Version**: 2.2.0 | **Ratified**: 2026-08-30 | **Last Amended**: 2026-08-30
