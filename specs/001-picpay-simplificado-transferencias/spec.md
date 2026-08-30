@@ -26,7 +26,7 @@ Usuário comum com saldo transfere um valor para outro usuário comum via `POST 
 
 **Why this priority**: É o fluxo primário de valor da plataforma e o contrato explicitamente exigido (`POST /transfer`). Sem ele não há MVP.
 
-**Independent Test**: Criar dois usuários comuns com carteiras (ex: payer com 100, payee com 50), `POST /transfer` com `value=10, payer=1, payee=2`, autorizador retorna autorizado, e verificar saldos finais (90 e 60) e notificação disparada. Pode ser testado sem lojistas.
+**Independent Test**: Criar dois usuários comuns com carteiras (ex: payer com 100, payee com 50), `POST /transfer` com `value="10.00", payer=1, payee=2`, autorizador retorna autorizado, e verificar saldos finais (90 e 60) e notificação disparada. Pode ser testado sem lojistas.
 
 **Acceptance Scenarios**:
 
@@ -106,7 +106,7 @@ Transferência depende de autorizador externo e notificação assíncrona. Falha
 - CPF válido mas já cadastrado como mesmo CPF normalizado → 409/422 por unicidade.
 - Autorizador externo retorna payload inesperado → tratar como não autorizado/erro.
 - Notificação externa lenta (latência alta) → não deve bloquear resposta da transferência além de timeout configurado; processamento assíncrono/retentativa se necessário.
-- Depósito (fora do escopo P1) — se implementado, deve creditar carteira e ser auditável, mas não é obrigatório para `POST /transfer`.
+- Depósito está fora do escopo desta feature; saldos para testes devem ser providos via seed/migração.
 
 ## Requirements *(mandatory)*
 
@@ -116,7 +116,7 @@ Transferência depende de autorizador externo e notificação assíncrona. Falha
 - **FR-002**: Sistema MUST garantir unicidade de documento (CPF/CNPJ normalizado) e unicidade de e-mail entre todos os usuários (um registro por documento normalizado ou e-mail).
 - **FR-003**: Sistema MUST classificar usuários em dois tipos: `common` (usuário comum) e `merchant` (lojista), persistindo o tipo no cadastro.
 - **FR-004**: Sistema MUST criar e manter uma carteira (balance) por usuário, com saldo não-negativo, inicializado em zero.
-- **FR-005**: Sistema MUST expor endpoint REST `POST /transfer` com payload `{value: number, payer: id, payee: id}` conforme contrato.
+- **FR-005**: Sistema MUST expor endpoint REST `POST /transfer` com payload `{value: string, payer: id, payee: id}` conforme contrato e Clarification Q5.
 - **FR-006**: Sistema MUST permitir que usuários `common` enviem transferências para usuários `common` e para `merchant`.
 - **FR-007**: Sistema MUST impedir que `merchant` realize transferências como payer (apenas recebe).
 - **FR-008**: Sistema MUST exigir que `value` seja string decimal exata com 2 casas decimais (ex: `"100.00"`), positiva e com no máximo 2 casas; valores `number` (ex: `100.0`) MUST ser rejeitados com 422; `payer != payee` MUST ser validado (Clarifications 2026-08-30).
@@ -159,7 +159,7 @@ Transferência depende de autorizador externo e notificação assíncrona. Falha
 - **SC-008**: Quando autorizador retorna não autorizado ou indisponível, nenhuma transferência altera saldos (0% de débito fantasma).
 - **SC-009**: Em falha durante débito/crédito, transação é revertida e saldos permanecem consistentes (sem saldo negativo ou duplo crédito) em 100% das execuções.
 - **SC-010**: Transferência concluída dispara notificação ao payee; falha da notificação não reverte saldo e é registrada para observabilidade/retentativa.
-- **SC-011**: Operação idempotente: repetição de `POST /transfer` com mesma `Idempotency-Key` retorna mesmo resultado sem segundo débito/crédito.
+- **SC-011**: Operação idempotente: repetição de `POST /transfer` com o mesmo fingerprint interno de `payer+payee+value` dentro da janela de 3 minutos retorna o mesmo resultado sem segundo débito/crédito.
 - **SC-012**: 90% dos usuários conseguem completar transferência válida na primeira tentativa sem assistência.
 - **SC-013**: Sistema mantém taxa de erro < 1% para transferências válidas sob carga de 100 transferências/minuto simuladas.
 
@@ -171,8 +171,7 @@ Transferência depende de autorizador externo e notificação assíncrona. Falha
 - Autorizador `GET https://util.devi.tools/api/v2/authorize` espera resposta com campo indicando autorização (ex: `{status:"authorized"}` ou `{message:"Autorizado"}`); implementação deve tratar variações comuns e mapear não autorizado vs erro.
 - Notificação `POST https://util.devi.tools/api/v1/notify` é fire-and-forget após commit financeiro; timeout curto (ex: 2s) e retentativa assíncrona ou log são aceitáveis para lidar com instabilidade.
 - Valores monetários em BRL (R$) com 2 casas decimais; persistência como `DECIMAL(15,2)` ou inteiro em centavos.
-- Idempotência via `Idempotency-Key` header é opcional para cliente mas MUST ser suportada pelo servidor quando fornecida.
+- Idempotência nesta versão usa fingerprint interno de `payer+payee+value` em Redis com TTL de 3 minutos; `Idempotency-Key` do cliente não faz parte do contrato desta feature.
 - Sistema é RESTFul e stateless; sem necessidade de frontend nesta feature.
 - Carga esperada baixa para MVP; requisitos de performance são para validação, não SLA de produção.
 - Validação de CPF/CNPJ segue regras oficiais brasileiras (formato, normalização e dígitos verificadores); detalhes de implementação serão definidos no plan sem expor biblioteca específica nesta spec.
-
