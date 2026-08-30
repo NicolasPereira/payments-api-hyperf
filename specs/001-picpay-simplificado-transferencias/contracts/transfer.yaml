@@ -1,0 +1,113 @@
+openapi: 3.0.3
+info:
+  title: PicPay Simplificado Transfer API
+  version: 1.0.0
+  description: Contract for transferring money between registered users.
+paths:
+  /transfer:
+    post:
+      summary: Transfer money from a common user to another user
+      operationId: createTransfer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+            examples:
+              valid:
+                value:
+                  value: '100.00'
+                  payer: 4
+                  payee: 15
+      responses:
+        '200':
+          description: Transfer completed and notification queued.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferResponse'
+        '201':
+          description: Transfer completed and notification queued.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferResponse'
+        '403':
+          description: Payer is not allowed to transfer or authorizer denied.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Payer or payee does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation, insufficient balance, or invalid state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: Authorizer returned an invalid upstream response.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Authorizer is unavailable or timed out.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    TransferRequest:
+      type: object
+      required: [value, payer, payee]
+      additionalProperties: false
+      properties:
+        value:
+          type: string
+          pattern: '^(?!0+\.00$)[0-9]+\.[0-9]{2}$'
+          description: Positive BRL amount with exactly two decimal places.
+          example: '100.00'
+        payer:
+          type: integer
+          minimum: 1
+        payee:
+          type: integer
+          minimum: 1
+    TransferResponse:
+      type: object
+      required: [id, value, payer, payee, status]
+      properties:
+        id:
+          type: integer
+        value:
+          type: string
+          example: '100.00'
+        payer:
+          type: integer
+        payee:
+          type: integer
+        status:
+          type: string
+          enum: [completed]
+        notification:
+          type: string
+          enum: [queued]
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: insufficient_balance
+        message:
+          type: string
+        correlation_id:
+          type: string
