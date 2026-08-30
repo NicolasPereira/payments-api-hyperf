@@ -1,35 +1,22 @@
 <!-- Sync Impact Report
 
-Version change: 1.0.0 → 2.0.0
+Version change: 2.0.0 → 2.1.0
 
 Modified principles:
-- I. Coroutine-First & Hyperf Idioms — refined to focus on runtime constraints rather than implementation details.
-- II. Test-First Development — refined to distinguish mandatory testing from specific coverage thresholds.
-- III. Domain Integrity & Financial Correctness — strengthened financial invariants, idempotency, transactionality, and auditability.
-- IV. Domain-Centric & Hexagonal Architecture — added DDD, Ports & Adapters, Dependency Inversion, and explicit Use Cases.
-- V. Security & Data Protection — consolidated application security, secrets, authentication, authorization, and sensitive data handling.
-- VI. Observability & Operational Excellence — strengthened observability requirements and established OpenTelemetry as the standard telemetry framework.
-- VII. API & Contract Stability — added explicit API evolution and backward-compatibility principles.
+- None (all 7 principles I-VII preserved verbatim per user request).
 
 Modified sections:
-- Technology Stack & Constraints — reduced implementation-level details while preserving globally relevant technology constraints.
-- Development Workflow & Quality Gates — separated architectural principles from CI/CD and quality policies.
-- Exceptions & Governance — formalized exceptions and constitutional amendments.
+- Development Workflow & Quality Gates — preserved verbatim; noted as extended by new dedicated sections (no semantic change, reference retained).
 
 Added:
-- MUST / SHOULD / MAY normative language.
-- Financial failure transparency.
-- Financial mutation auditability.
-- Architectural complexity/YAGNI constraint.
-- Formal exception process.
+- Pull Request Standards — formalizes PR requirements: description, Spec Kit reference, ADRs, design decisions, testing, security/data/performance/observability impacts, schema/migration disclosure, limitations/risks, CI gates, reviewer approval, no unrelated changes, enforce via CI where possible.
+- Commit Standards — Conventional Commits mandatory (type(scope): description), allowed types (feat, fix, refactor, test, docs, chore, build, ci, perf, revert), imperative English, BREAKING CHANGE via footer/! , atomic logical change, no broad git add . / git add -A, staged diff review, no generated/secrets in commits, traceability to Spec Kit task (e.g., T001 → feat(payment): ...).
+- Quality Gates — expanded merge gates: automated tests, static analysis, code style, constitution compliance, security, architectural, integration/contract tests, PR requirements, Conventional Commit requirements; feature branches from main, PRs required, direct commits to main FORBIDDEN (except emergency/admin), exception process fallback.
 
-Removed:
-- Specific infrastructure ports and image details from the Constitution.
-- Specific performance thresholds from global principles.
-- Specific implementation classes and framework configuration details.
+Removed: none.
+Conflicts resolved: Commit Standards MUST supersedes previous SHOULD for Conventional Commits; PR Standards explicitly strengthens previous SHOULD/REQUIRED summary; Quality Gates detailed list extends previous summary gates within Development Workflow.
 
-Follow-up TODOs:
-- None.
+Follow-up TODOs: none.
 -->
 
 # payments-api-hyperf Constitution
@@ -292,6 +279,119 @@ Pull Requests are REQUIRED for changes to the main branch.
 
 ---
 
+## Pull Request Standards
+
+All changes to `main` MUST be submitted through a Pull Request.
+
+Every Pull Request MUST:
+
+* Clearly describe the problem being solved and the expected outcome.
+* Reference the corresponding Spec Kit specification when the change is related to a Spec-Driven feature.
+* Identify relevant architectural decisions or ADRs.
+* Describe important implementation or design decisions.
+* Document testing and validation performed.
+* Identify security, data, performance, and observability impacts when applicable.
+* Identify database schema or migration changes when applicable.
+* Explicitly disclose known limitations, risks, or follow-up work.
+* Pass all mandatory CI quality gates.
+* Receive at least one reviewer approval before merge.
+
+Pull Requests MUST NOT contain unrelated changes.
+
+The Pull Request description MUST provide enough context for a reviewer or AI agent to understand the relationship between the problem, specification, implementation, and validation.
+
+If a requirement can be mechanically enforced, it SHOULD be enforced by CI rather than relying solely on human review.
+
+---
+
+## Commit Standards
+
+All commits MUST follow the Conventional Commits specification.
+
+Commit messages MUST use the following structure:
+
+```text
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer]
+```
+
+Allowed commit types MUST include, at minimum:
+
+* `feat` — new functionality
+* `fix` — bug fix
+* `refactor` — code restructuring without behavior change
+* `test` — tests only
+* `docs` — documentation only
+* `chore` — maintenance tasks
+* `build` — build system or dependency changes
+* `ci` — CI/CD changes
+* `perf` — performance improvements
+* `revert` — revert a previous commit
+
+Commit descriptions MUST be concise, imperative, and written in English.
+
+Breaking changes MUST be explicitly identified using the Conventional Commits `BREAKING CHANGE` footer or the `!` notation.
+
+Each commit MUST represent one coherent logical change.
+
+Files belonging to different logical changes MUST be committed separately.
+
+A commit MAY contain multiple files when those files are required to implement the same logical change.
+
+The agent MUST NOT use broad staging operations such as:
+
+```text
+git add .
+git add -A
+```
+
+when they could include unrelated changes.
+
+Before creating a commit, the working tree and staged diff MUST be reviewed to ensure that every staged file belongs to the intended logical change.
+
+Generated files, runtime artifacts, dependencies, secrets, and unrelated modifications MUST NOT be included in a commit.
+
+Commits SHOULD remain small, focused, and independently understandable.
+
+AI-generated commits MUST follow the same standards as human-created commits and MUST NOT combine unrelated changes merely for convenience.
+
+When practical, commits SHOULD maintain traceability to the corresponding Spec Kit task or logical unit of work.
+
+For example:
+
+* `T001 → feat(payment): add payment entity`
+* `T002 → feat(payment): implement payment creation`
+* `T003 → test(payment): cover payment creation flow`
+
+---
+
+## Quality Gates
+
+Quality gates for merge MUST include, where applicable:
+
+* automated tests passing;
+* static analysis passing;
+* code style validation passing;
+* constitution compliance;
+* relevant security checks;
+* relevant architectural checks;
+* relevant integration and contract tests;
+* Pull Request requirements satisfied;
+* Conventional Commit requirements satisfied.
+
+Feature branches SHOULD be created from `main`.
+
+Pull Requests are REQUIRED for changes to the main branch.
+
+Direct commits to `main` are FORBIDDEN unless explicitly authorized for emergency recovery or repository administration.
+
+If a quality gate cannot be satisfied, the exception process defined in this Constitution MUST be followed.
+
+---
+
 ## Exceptions
 
 A constitutional principle MAY be violated only through an explicit exception.
@@ -345,4 +445,4 @@ The authoritative copy of this Constitution is:
 
 Spec Kit templates, plans, tasks, and implementation guidance MUST defer to this document when conflicts occur.
 
-**Version**: 2.0.0 | **Ratified**: 2026-08-30 | **Last Amended**: 2026-08-30
+**Version**: 2.1.0 | **Ratified**: 2026-08-30 | **Last Amended**: 2026-08-30
