@@ -8,6 +8,16 @@
 
 **Input**: User description: "PicPay Simplificado é uma plataforma de pagamentos simplificada. Nela é possível depositar e realizar transferências de dinheiro entre usuários. Temos 2 tipos de usuários, os comuns e lojistas, ambos têm carteira com dinheiro e realizam transferências entre eles. Requisitos: Nome Completo, CPF, e-mail e Senha com CPF/CNPJ e e-mails únicos; Usuários comuns podem enviar para lojistas e entre usuários; Lojistas só recebem; Validar saldo antes da transferência; Consultar serviço autorizador externo GET https://util.devi.tools/api/v2/authorize antes de finalizar; Transferência deve ser transacional e revertida em inconsistência; Notificação de recebimento via POST https://util.devi.tools/api/v1/notify (pode estar indisponível); RESTFul; Endpoint POST /transfer {value, payer, payee}. Revisão: Usuários comuns devem possuir CPF válido, lojistas CNPJ válido, validação conforme regras oficiais brasileiras incluindo formato, normalização e dígitos verificadores; documentos normalizados antes de validação/persistência removendo formatação; inválido MUST ser rejeitado antes de persistência; validação é regra de domínio independente de infraestrutura."
 
+## Clarifications
+
+### Session 2026-08-30
+
+- Q: O escopo desta feature deve incluir um endpoint de depósito para creditar carteiras, ou o saldo inicial será provido apenas via seed/carga manual para testes? → A: Opção A — Apenas seed/carga manual, sem endpoint de depósito nesta feature; carteiras iniciam com 0 e saldo para testes é provido via seed/migração.
+- Q: Qual política mínima de senha deve ser exigida no cadastro de usuários? → A: Opção A — Mínimo 8 caracteres, sem complexidade obrigatória, senha armazenada com hash seguro.
+- Q: O POST /transfer deve exigir Idempotency-Key do cliente ou o servidor deve gerar chave interna? → A: Opção C — Chave interna via hash de payer+payee+value, persistida em Redis com TTL de 3 minutos. **Nota**: hash puro de conteúdo com TTL curto não garante idempotência completa (risco de falso positivo); recomendado evoluir para Idempotency-Key do cliente + TTL longo e persistência MySQL (ver discussão).
+- Q: Qual deve ser o comportamento quando a notificação POST /notify falha após transferência concluída? → A: Opção A com Outbox Pattern — fire-and-forget, transferência retorna sucesso imediatamente, notificação registrada via Outbox na mesma transação e retentada async (até 3x) sem reverter saldo.
+- Q: O campo value do POST /transfer deve ser aceito como número ou string decimal exata? → A: Opção B — Exigir string decimal exata (ex: "100.00"), rejeitar number, para garantir exatidão e evitar imprecisão de ponto flutuante.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Transferência entre usuários comuns (Priority: P1)
@@ -20,10 +30,10 @@ Usuário comum com saldo transfere um valor para outro usuário comum via `POST 
 
 **Acceptance Scenarios**:
 
-1. **Given** payer comum com saldo 100 e payee comum com saldo 20, **When** `POST /transfer {value:10, payer:1, payee:2}` e autorizador retorna `authorized`, **Then** resposta 200/201 com confirmação, saldos 90 e 30, transferência registrada.
-2. **Given** payer com saldo 5, **When** `POST /transfer {value:10, payer:1, payee:2}`, **Then** resposta 422 com erro de saldo insuficiente e saldos inalterados.
-3. **Given** autorizador retorna não autorizado, **When** `POST /transfer {value:10, payer:1, payee:2}` com saldo suficiente, **Then** resposta 403/422 e saldos inalterados.
-4. **Given** payer e payee são o mesmo usuário, **When** `POST /transfer`, **Then** resposta 422.
+1. **Given** payer comum com saldo 100 e payee comum com saldo 20, **When** `POST /transfer {value:"10.00", payer:1, payee:2}` e autorizador retorna `authorized`, **Then** resposta 200/201 com confirmação, saldos 90 e 30, transferência registrada.
+2. **Given** payer com saldo 5, **When** `POST /transfer {value:"10.00", payer:1, payee:2}`, **Then** resposta 422 com erro de saldo insuficiente e saldos inalterados.
+3. **Given** autorizador retorna não autorizado, **When** `POST /transfer {value:"10.00", payer:1, payee:2}` com saldo suficiente, **Then** resposta 403/422 e saldos inalterados.
+4. **Given** payer e payee são o mesmo usuário, **When** `POST /transfer {value:"10.00", payer:1, payee:2}`, **Then** resposta 422.
 
 ---
 
@@ -37,8 +47,8 @@ Usuário comum transfere para lojista. Lojista recebe crédito e notificação, 
 
 **Acceptance Scenarios**:
 
-1. **Given** usuário comum saldo 50 e lojista saldo 10, **When** `POST /transfer {value:20, payer:usuario, payee:lojista}` autorizado, **Then** saldos 30 e 30.
-2. **Given** lojista como payer, **When** `POST /transfer {value:10, payer:lojista, payee:usuario}`, **Then** resposta 403/422 "lojista não pode enviar".
+1. **Given** usuário comum saldo 50 e lojista saldo 10, **When** `POST /transfer {value:"20.00", payer:usuario, payee:lojista}` autorizado, **Then** saldos 30 e 30.
+2. **Given** lojista como payer, **When** `POST /transfer {value:"10.00", payer:lojista, payee:usuario}`, **Then** resposta 403/422 "lojista não pode enviar".
 
 ---
 
@@ -82,8 +92,8 @@ Transferência depende de autorizador externo e notificação assíncrona. Falha
 
 ### Edge Cases
 
-- Valor zero, negativo ou com mais de 2 casas decimais → 422.
-- `value` não numérico ou ausente → 422.
+- `value` não-string, string com formato inválido, zero, negativo ou com mais de 2 casas decimais → 422 (contrato exige string exata ex: "100.00").
+- `value` ausente ou `number` (ex: 100.0) → 422.
 - `payer` ou `payee` inexistente → 404.
 - `payer == payee` → 422.
 - Saldo exatamente igual ao valor → deve permitir (saldo final 0).
@@ -102,14 +112,14 @@ Transferência depende de autorizador externo e notificação assíncrona. Falha
 
 ### Functional Requirements
 
-- **FR-001**: Sistema MUST permitir cadastro de usuários com Nome Completo, documento, e-mail e Senha, onde documento é CPF para `common` e CNPJ para `merchant`.
+- **FR-001**: Sistema MUST permitir cadastro de usuários com Nome Completo, documento, e-mail e Senha (mínimo 8 caracteres, armazenada com hash seguro), onde documento é CPF para `common` e CNPJ para `merchant`.
 - **FR-002**: Sistema MUST garantir unicidade de documento (CPF/CNPJ normalizado) e unicidade de e-mail entre todos os usuários (um registro por documento normalizado ou e-mail).
 - **FR-003**: Sistema MUST classificar usuários em dois tipos: `common` (usuário comum) e `merchant` (lojista), persistindo o tipo no cadastro.
 - **FR-004**: Sistema MUST criar e manter uma carteira (balance) por usuário, com saldo não-negativo, inicializado em zero.
 - **FR-005**: Sistema MUST expor endpoint REST `POST /transfer` com payload `{value: number, payer: id, payee: id}` conforme contrato.
 - **FR-006**: Sistema MUST permitir que usuários `common` enviem transferências para usuários `common` e para `merchant`.
 - **FR-007**: Sistema MUST impedir que `merchant` realize transferências como payer (apenas recebe).
-- **FR-008**: Sistema MUST validar que `value` é positivo, com no máximo 2 casas decimais, e que `payer != payee`.
+- **FR-008**: Sistema MUST exigir que `value` seja string decimal exata com 2 casas decimais (ex: `"100.00"`), positiva e com no máximo 2 casas; valores `number` (ex: `100.0`) MUST ser rejeitados com 422; `payer != payee` MUST ser validado (Clarifications 2026-08-30).
 - **FR-009**: Sistema MUST validar que `payer` e `payee` existem; caso contrário retornar 404.
 - **FR-010**: Sistema MUST validar que `payer` possui saldo suficiente antes de autorizar; caso contrário retornar erro de saldo insuficiente e não alterar saldos.
 - **FR-011**: Sistema MUST consultar serviço autorizador externo `GET https://util.devi.tools/api/v2/authorize` antes de finalizar a transferência; somente com resposta de autorização prosseguir.
@@ -117,8 +127,8 @@ Transferência depende de autorizador externo e notificação assíncrona. Falha
 - **FR-013**: Sistema MUST tratar indisponibilidade/timeout/5xx do autorizador como falha da transferência sem alteração de saldos e com erro mapeado (não 2xx).
 - **FR-014**: Sistema MUST executar débito do payer e crédito do payee de forma atômica/transacional; qualquer inconsistência MUST reverter a operação e devolver saldo ao payer.
 - **FR-015**: Sistema MUST registrar transferência com valor, payer, payee, status (success/failed), timestamp e correlação.
-- **FR-016**: Sistema MUST disparar notificação de recebimento ao payee via `POST https://util.devi.tools/api/v1/notify` após transferência concluída com sucesso; falha/indisponibilidade da notificação MUST NOT reverter a transferência.
-- **FR-017**: Sistema MUST tornar operação de transferência idempotente quando cliente fornecer chave de idempotência (ex: `Idempotency-Key` header); repetição com mesma chave MUST retornar mesmo resultado sem duplicar side effects.
+- **FR-016**: Sistema MUST disparar notificação de recebimento ao payee via `POST https://util.devi.tools/api/v1/notify` após transferência concluída com sucesso usando Outbox Pattern; entrada de Outbox MUST ser criada na mesma transação da transferência, worker assíncrono MUST publicar para `POST /notify` com retentativa até 3x; falha/indisponibilidade MUST NOT reverter a transferência, mantendo status `pending`/`failed` para observabilidade (Clarifications 2026-08-30).
+- **FR-017**: Sistema MUST tornar operação de transferência idempotente via chave interna (hash de `payer+payee+value`) persistida em Redis com TTL de 3 minutos; repetição dentro da janela MUST retornar mesmo resultado sem duplicar débito/crédito (Clarifications 2026-08-30).
 - **FR-018**: Sistema MUST expor códigos HTTP e mensagens de erro consistentes e em português ou inglês padronizado (422 para validação, 403 para lojista payer, 404 para não encontrado, 503/502 para autorizador indisponível).
 - **FR-019**: Sistema MUST validar unicidade e formato básico de e-mail no cadastro e retornar erro apropriado em duplicidade.
 - **FR-020**: Sistema MUST exigir que usuários `common` possuam CPF válido (11 dígitos) e que `merchant` possuam CNPJ válido (14 dígitos), conforme regras oficiais brasileiras.
@@ -130,9 +140,9 @@ Transferência depende de autorizador externo e notificação assíncrona. Falha
 
 ### Key Entities
 
-- **User**: Representa pessoa no sistema. Atributos: id, nome completo, documento (CPF para `common` — 11 dígitos normalizados — ou CNPJ para `merchant` — 14 dígitos normalizados, único), e-mail (único), senha (hash), tipo (`common` | `merchant`), timestamps. Documento é armazenado normalizado (apenas dígitos).
+- **User**: Representa pessoa no sistema. Atributos: id, nome completo, documento (CPF para `common` — 11 dígitos normalizados — ou CNPJ para `merchant` — 14 dígitos normalizados, único), e-mail (único), senha (hash seguro, mínimo 8 caracteres plain antes de hash), tipo (`common` | `merchant`), timestamps. Documento é armazenado normalizado (apenas dígitos).
 - **Wallet**: Representa carteira financeira de um User. Atributos: id, user_id (FK único), balance (decimal não-negativo com 2 casas, moeda BRL implícita), updated_at. Relacionamento 1:1 com User.
-- **Transfer**: Representa movimentação financeira. Atributos: id, value (decimal positivo), payer_id (FK User), payee_id (FK User), status (pending/authorized/completed/failed), idempotency_key (opcional, único), authorized_at, completed_at, external_authorizer_response, created_at. Relaciona payer e payee.
+- **Transfer**: Representa movimentação financeira. Atributos: id, value (string decimal exata convertida para decimal positivo com 2 casas, ex: "100.00"), payer_id (FK User), payee_id (FK User), status (pending/authorized/completed/failed), idempotency_key (interno hash payer+payee+value, opcional), authorized_at, completed_at, external_authorizer_response, created_at. Relaciona payer e payee.
 - **Notification**: Representa tentativa de notificação ao payee. Atributos: id, transfer_id (FK), payee_id, channel (email/sms - abstrato), status (pending/sent/failed), attempts, last_response, created_at.
 
 ## Success Criteria *(mandatory)*
@@ -155,7 +165,7 @@ Transferência depende de autorizador externo e notificação assíncrona. Falha
 
 ## Assumptions
 
-- Depósito de saldo não é detalhado no contrato; assume-se que carteiras podem ser inicializadas via seed, endpoint `POST /deposit` opcional ou ajuste manual para testes — não obrigatório para validar `POST /transfer`, mas necessário para prover saldo.
+- Depósito de saldo está FORA do escopo desta feature (Clarifications 2026-08-30, Opção A); carteiras são inicializadas com saldo 0 e saldo para testes é provido via seed/migração — endpoint `POST /deposit` não será implementado nesta feature.
 - Autenticacão para `POST /transfer` não exigida no contrato; assume-se endpoint aberto para MVP, podendo adicionar auth em iteração futura sem quebrar contrato.
 - E-mail é validado por formato básico e unicidade; normalização de e-mail é case-insensitive para unicidade (ex: `A@b.com` ≡ `a@b.com`).
 - Autorizador `GET https://util.devi.tools/api/v2/authorize` espera resposta com campo indicando autorização (ex: `{status:"authorized"}` ou `{message:"Autorizado"}`); implementação deve tratar variações comuns e mapear não autorizado vs erro.
