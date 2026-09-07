@@ -43,7 +43,7 @@ by SC-001, SC-002 and SC-013
 
 **Constraints**: No floating-point money arithmetic; `value` is a decimal
 string with exactly two fractional digits; invalid documents are rejected before
-persistence; merchant cannot pay; authorization precedes financial mutation;
+persistence (CPF `^[0-9]{11}$`, CNPJ `^[A-Z0-9]{12}[0-9]{2}$` per IN RFB 2.229/2024 — legacy `^[0-9]{14}$` compatible, DV via `ASCII-48` módulo 11, case-insensitive); merchant cannot pay; authorization precedes financial mutation;
 transfer and Outbox row commit atomically; notification failure never reverses
 a completed transfer; no deposit endpoint in this feature
 

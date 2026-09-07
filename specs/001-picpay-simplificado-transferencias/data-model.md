@@ -11,7 +11,7 @@ Represents a person or merchant allowed to hold a wallet.
 | `id` | positive identifier | Primary identity; referenced by wallets and transfers |
 | `full_name` | non-empty text | Required for all user types |
 | `document_type` | `cpf` or `cnpj` | `cpf` for `common`; `cnpj` for `merchant` |
-| `document` | normalized digits | 11 digits for CPF or 14 for CNPJ; unique globally |
+| `document` | normalized alphanumeric uppercase | CPF `^[0-9]{11}$` (11 digits) or CNPJ `^[A-Z0-9]{12}[0-9]{2}$` (12 alphanum + 2 DVs, legacy `^[0-9]{14}$` compatible); unique globally, case-insensitive for CNPJ |
 | `email` | normalized email | Required and unique globally; comparison is case-insensitive |
 | `password_hash` | opaque secret hash | Plain password is never persisted or returned; input minimum is 8 characters |
 | `type` | `common` or `merchant` | `merchant` can receive but cannot initiate transfers |
@@ -20,10 +20,10 @@ Represents a person or merchant allowed to hold a wallet.
 
 ### User Invariants
 
-- Document is normalized before validation and persistence.
-- CPF/CNPJ format and official check digits are valid before any persistence.
+- Document is normalized before validation and persistence: strip `.-/ ` and spaces, `uppercase` (CNPJ alfa case-insensitive); stored `VARCHAR(14)` uppercase.
+- CPF/CNPJ format and official check digits are valid before any persistence: CPF `^[0-9]{11}$` módulo 11; CNPJ `^[A-Z0-9]{12}[0-9]{2}$` com DV `ASCII-48` (`A=17...Z=42`), pesos `2-9`, módulo 11 per IN RFB 2.229/2024 — legado `^[0-9]{14}$` permanece válido.
 - A common user has CPF and a merchant has CNPJ.
-- Duplicate normalized documents and duplicate normalized emails are rejected.
+- Duplicate normalized documents (CNPJ alfa case-insensitive) and duplicate normalized emails are rejected.
 - A failed document validation creates neither a User nor a Wallet.
 
 ## Wallet

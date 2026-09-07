@@ -25,14 +25,13 @@ there is deliberately no deposit endpoint in this feature.
 ## Registration Validation
 
 1. Register a common user using a formatted valid CPF.
-2. Confirm HTTP `201`, normalized digits-only document, and balance `0.00`.
-3. Register a merchant using a formatted valid CNPJ.
-4. Confirm HTTP `201`, normalized digits-only document, and balance `0.00`.
-5. Repeat either document with different formatting and confirm duplicate
-   rejection (`409` or the documented validation error).
-6. Submit invalid format, invalid check digits, repeated digits, and a
-   common/merchant document mismatch. Confirm HTTP `422` and no persisted
-   user or wallet.
+2. Confirm HTTP `201`, normalized digits-only document (`^[0-9]{11}$`), and balance `0.00`.
+3. Register a merchant using a formatted valid CNPJ (numeric legacy `11.222.333/0001-81`).
+4. Confirm HTTP `201`, normalized digits-only document (`^[0-9]{14}$`), and balance `0.00`.
+5. Register a merchant using a formatted valid CNPJ alfanumérico (IN RFB 2.229/2024) `12.ABC.345/01DE-35`.
+6. Confirm HTTP `201`, normalized uppercase alphanumeric `12ABC34501DE35` (`^[A-Z0-9]{12}[0-9]{2}$`), and balance `0.00`.
+7. Repeat either document with different formatting/case (`529.982.247-25` vs `52998224725`, `12abc34501de35` vs `12ABC34501DE35`) and confirm duplicate rejection (`409` or documented validation error, case-insensitive for CNPJ alfa).
+8. Submit invalid format, invalid check digits (CPF tradicional e CNPJ alfa via `ASCII-48` módulo 11), repeated digits, and a common/merchant document mismatch. Confirm HTTP `422` and no persisted user or wallet.
 
 See [`contracts/users.yaml`](contracts/users.yaml) and the `User` invariants in
 [`data-model.md`](data-model.md).

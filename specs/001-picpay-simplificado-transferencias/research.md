@@ -3,14 +3,16 @@
 **Feature**: `001-picpay-simplificado-transferencias`
 **Date**: 2026-08-30
 
-## Decision 1: Domain Validation for CPF and CNPJ
+## Decision 1: Domain Validation for CPF and CNPJ (incl. CNPJ Alfanumérico IN RFB 2.229/2024)
 
 - **Decision**: Model document normalization and CPF/CNPJ validation as a pure
-  domain capability. The input is normalized before format and check-digit
+  domain capability. The input is normalized (strip `.-/ ` and spaces, `uppercase` for CNPJ) before format and check-digit
   validation, and the normalized value is the only value passed to persistence.
+  CPF remains `^[0-9]{11}$` with traditional módulo 11.
+  CNPJ follows IN RFB nº 2.229/2024: `^[A-Z0-9]{12}[0-9]{2}$` (12 alfanuméricos `[A-Z0-9]` + 2 DVs numéricos), with legacy `^[0-9]{14}$` still valid (retrocompatível). DV is computed via `valor = ASCII(c) - 48` (`0-9=0-9`, `A=17, B=18 ... Z=42`), weights `2-9` right-to-left, `módulo 11` (`DV=0` if resto `0`/`1`, else `11-resto`), per Manual RFB. Uniqueness is case-insensitive on normalized form; storage is `VARCHAR(14)` uppercase.
 - **Rationale**: FR-020 through FR-025 require official Brazilian validation,
   rejection before persistence, and independence from HTTP, database, and
-  infrastructure. Keeping the rule in the domain makes it unit-testable and
+  infrastructure. IN 2.229/2024 (vigência julho/2026) extends CNPJ to alphanumeric while preserving 14 positions and numeric DVs; supporting it now keeps the MVP compliant with the current Brazilian registration reality and avoids rejecting legitimate new merchants. Keeping the rule in the domain makes it unit-testable and
   reusable by any delivery mechanism.
 - **Alternatives considered**:
   - Validate only in the controller: rejected because business rules would be
@@ -20,6 +22,7 @@
   - Select a concrete third-party library in the spec: deferred to
     implementation because the user explicitly requested the library decision
     in planning/implementation.
+  - Keep CNPJ strictly `^[0-9]{14}$`: rejected because it contradicts IN 2.229/2024 and `spec.md` Clarification 2026-09-07; would reject valid new CNPJs like `12ABC34501DE35`.
 
 ## Decision 2: Monetary Input and Representation
 
