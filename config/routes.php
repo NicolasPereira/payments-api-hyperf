@@ -16,3 +16,7 @@ Router::addRoute(['GET', 'POST', 'HEAD'], '/', 'App\Controller\IndexController@i
 Router::get('/favicon.ico', function () {
     return '';
 });
+
+// PicPay Simplificado contracts per plan.md:114 and tasks T012
+Router::post('/users', 'App\Controller\UserController@create');
+Router::post('/transfer', 'App\Controller\TransferController@transfer');

@@ -9,6 +9,8 @@ declare(strict_types=1);
  * @contact  group@hyperf.io
  * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
  */
+use App\Infrastructure\Logging\TraceContextProcessor;
+use Monolog\Formatter\JsonFormatter;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
@@ -31,6 +33,48 @@ return [
                     'dateFormat' => 'Y-m-d H:i:s',
                     'allowInlineLineBreaks' => true,
                 ],
+            ],
+            'processors' => [
+                TraceContextProcessor::class,
+            ],
+        ],
+        // Structured JSON logs with trace context per Constitution VI
+        'structured' => [
+            'handler' => [
+                'class' => StreamHandler::class,
+                'constructor' => [
+                    'stream' => BASE_PATH . '/runtime/logs/structured.log',
+                    'level' => Level::Info,
+                ],
+            ],
+            'formatter' => [
+                'class' => JsonFormatter::class,
+                'constructor' => [
+                    'batchMode' => JsonFormatter::BATCH_MODE_NEWLINES,
+                    'appendNewline' => true,
+                ],
+            ],
+            'processors' => [
+                TraceContextProcessor::class,
+            ],
+        ],
+        'stderr' => [
+            'handler' => [
+                'class' => StreamHandler::class,
+                'constructor' => [
+                    'stream' => 'php://stderr',
+                    'level' => Level::Debug,
+                ],
+            ],
+            'formatter' => [
+                'class' => JsonFormatter::class,
+                'constructor' => [
+                    'batchMode' => JsonFormatter::BATCH_MODE_NEWLINES,
+                    'appendNewline' => true,
+                ],
+            ],
+            'processors' => [
+                TraceContextProcessor::class,
             ],
         ],
     ],

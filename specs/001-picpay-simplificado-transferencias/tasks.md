@@ -41,17 +41,17 @@
 
 **⚠️ CRITICAL**: Nenhuma User Story pode começar até esta fase completar
 
-- [ ] T006 Criar migrations MySQL para `users`, `wallets`, `transfers`, `notification_outbox` em `app/Infrastructure/Persistence/Migrations/` per `data-model.md:5`
-- [ ] T007 [P] Implementar `app/Domain/Shared/ValueObject/Money.php` com `DECIMAL(15,2)` exato, sem float, pattern `^[0-9]+\.[0-9]{2}$` per `spec.md:FR-008` e `research.md:Decision 2`
-- [ ] T008 [P] Implementar hierarquia de Domain Exceptions em `app/Domain/Shared/Exception/DomainException.php` (base `code` + `httpStatus` + `businessCode` para métricas/OTEL/event_tracking) + `app/Domain/User/Exception/InvalidDocumentException.php` / `DuplicateDocumentException.php` / `InvalidUserTypeException.php` + `app/Domain/Wallet/Exception/InsufficientBalanceException.php` + `app/Domain/Transfer/Exception/MerchantPayerNotAllowedException.php` / `SelfTransferException.php` / `TransferValidationException.php` (422) per `spec.md:FR-020..FR-025` e `Constitution IV:96`
-- [ ] T008b [P] Implementar `app/Infrastructure/Http/ExceptionMapper.php` + `app/Infrastructure/Http/ErrorResponse.php` mapeando `DomainException->businessCode` para envelope `contracts/transfer.yaml:103`/`users.yaml:95` (`code`, `message`, `correlation_id`) + OTEL `exception.type` + `metrics counter domain_exception_total{code}` per `Constitution VI:152`
-- [ ] T009 [P] Implementar `app/Infrastructure/Persistence/Database.php` helpers de transação + `SELECT FOR UPDATE` ordenado por `user_id` per `plan.md:145`
-- [ ] T010 [P] Implementar `app/Infrastructure/Cache/RedisIdempotencyStore.php` com `SET NX EX 180` atômico per `research.md:Decision 3`
-- [ ] T011 [P] Definir ports `app/Domain/Contracts/AuthorizerPort.php` e `app/Domain/Contracts/NotifierPort.php` + `AuthorizerResult`/`NotifyResult` value objects per `research.md:Decision 6`
-- [ ] T012 [P] Configurar `config/routes.php` com `POST /users` e `POST /transfer` + middleware correlação `X-Correlation-Id` per `plan.md:114`
-- [ ] T013 Configurar OpenTelemetry SDK bootstrap em `config/autoload/opentelemetry.php` + structured logs com trace context per Constitution VI e `plan.md:68`
-- [ ] T014 [P] Implementar `app/Infrastructure/External/AuthorizerHttpAdapter.php` (Hyperf Guzzle, TLS verify ON) mapeando `{status:success, data:{authorization:true}}` per `contracts/external-services.md:4`
-- [ ] T015 [P] Implementar `app/Infrastructure/External/NotifierHttpAdapter.php` (POST `https://util.devi.tools/api/v1/notify` 204) per `contracts/external-services.md:18`
+- [x] T006 Criar migrations MySQL para `users`, `wallets`, `transfers`, `notification_outbox` em `app/Infrastructure/Persistence/Migrations/` per `data-model.md:5`
+- [x] T007 [P] Implementar `app/Domain/Shared/ValueObject/Money.php` com `DECIMAL(15,2)` exato, sem float, pattern `^[0-9]+\.[0-9]{2}$` per `spec.md:FR-008` e `research.md:Decision 2`
+- [x] T008 [P] Implementar hierarquia de Domain Exceptions em `app/Domain/Shared/Exception/DomainException.php` (base `code` + `httpStatus` + `businessCode` para métricas/OTEL/event_tracking) + `app/Domain/User/Exception/InvalidDocumentException.php` / `DuplicateDocumentException.php` / `InvalidUserTypeException.php` + `app/Domain/Wallet/Exception/InsufficientBalanceException.php` + `app/Domain/Transfer/Exception/MerchantPayerNotAllowedException.php` / `SelfTransferException.php` / `TransferValidationException.php` (422) per `spec.md:FR-020..FR-025` e `Constitution IV:96`
+- [x] T008b [P] Implementar `app/Infrastructure/Http/ExceptionMapper.php` + `app/Infrastructure/Http/ErrorResponse.php` mapeando `DomainException->businessCode` para envelope `contracts/transfer.yaml:103`/`users.yaml:95` (`code`, `message`, `correlation_id`) + OTEL `exception.type` + `metrics counter domain_exception_total{code}` per `Constitution VI:152`
+- [x] T009 [P] Implementar `app/Infrastructure/Persistence/Database.php` helpers de transação + `SELECT FOR UPDATE` ordenado por `user_id` per `plan.md:145`
+- [x] T010 [P] Implementar `app/Infrastructure/Cache/RedisIdempotencyStore.php` com `SET NX EX 180` atômico per `research.md:Decision 3`
+- [x] T011 [P] Definir ports `app/Domain/Contracts/AuthorizerPort.php` e `app/Domain/Contracts/NotifierPort.php` + `AuthorizerResult`/`NotifyResult` value objects per `research.md:Decision 6`
+- [x] T012 [P] Configurar `config/routes.php` com `POST /users` e `POST /transfer` + middleware correlação `X-Correlation-Id` per `plan.md:114`
+- [x] T013 Configurar OpenTelemetry SDK bootstrap em `config/autoload/opentelemetry.php` + structured logs com trace context per Constitution VI e `plan.md:68`
+- [x] T014 [P] Implementar `app/Infrastructure/External/AuthorizerHttpAdapter.php` (Hyperf Guzzle, TLS verify ON) mapeando `{status:success, data:{authorization:true}}` per `contracts/external-services.md:4`
+- [x] T015 [P] Implementar `app/Infrastructure/External/NotifierHttpAdapter.php` (POST `https://util.devi.tools/api/v1/notify` 204) per `contracts/external-services.md:18`
 
 **Checkpoint**: Foundation ready — User Stories podem começar (US3 primeiro)
 
@@ -64,25 +64,25 @@
 
 ### Tests for User Story 3 (TDD — escrever ANTES, garantir FAIL)
 
-- [ ] T016 [P] [US3] Unit test CPF normalização/validação em `test/Unit/Domain/User/CpfTest.php` (formatado, DV, todos iguais, `11111111111` → 422)
-- [ ] T017 [P] [US3] Unit test CNPJ legado numérico em `test/Unit/Domain/User/CnpjLegacyTest.php` (`11.222.333/0001-81` → `11222333000181`)
-- [ ] T018 [P] [US3] Unit test CNPJ alfanumérico IN 2.229/2024 em `test/Unit/Domain/User/CnpjAlfaTest.php` (`12.ABC.345/01DE-35` → `12ABC34501DE35`, `12abc34501de35` case-insensitive, `ASCII-48` pesos 2-9 módulo 11, DV inválido `12ABC34501DE36` → 422)
-- [ ] T019 [P] [US3] Unit test compatibilidade tipo-documento em `test/Unit/Domain/User/UserTypeDocumentTest.php` (common+CNPJ → 422, merchant+CPF → 422)
-- [ ] T020 [P] [US3] Unit test Email normalização em `test/Unit/Domain/User/EmailTest.php` (case-insensitive `A@b.com` ≡ `a@b.com`, unicidade)
-- [ ] T021 [P] [US3] Contract test `POST /users` em `test/Contract/UsersContractTest.php` (201 common/merchant/merchant_alfa, 409 duplicata, 422 formato/DV/tipo)
+- [x] T016 [P] [US3] Unit test CPF normalização/validação em `test/Unit/Domain/User/CpfTest.php` (formatado, DV, todos iguais, `11111111111` → 422)
+- [x] T017 [P] [US3] Unit test CNPJ legado numérico em `test/Unit/Domain/User/CnpjLegacyTest.php` (`11.222.333/0001-81` → `11222333000181`)
+- [x] T018 [P] [US3] Unit test CNPJ alfanumérico IN 2.229/2024 em `test/Unit/Domain/User/CnpjAlfaTest.php` (`12.ABC.345/01DE-35` → `12ABC34501DE35`, `12abc34501de35` case-insensitive, `ASCII-48` pesos 2-9 módulo 11, DV inválido `12ABC34501DE36` → 422)
+- [x] T019 [P] [US3] Unit test compatibilidade tipo-documento em `test/Unit/Domain/User/UserTypeDocumentTest.php` (common+CNPJ → 422, merchant+CPF → 422)
+- [x] T020 [P] [US3] Unit test Email normalização em `test/Unit/Domain/User/EmailTest.php` (case-insensitive `A@b.com` ≡ `a@b.com`, unicidade)
+- [x] T021 [P] [US3] Contract test `POST /users` em `test/Contract/UsersContractTest.php` (201 common/merchant/merchant_alfa, 409 duplicata, 422 formato/DV/tipo)
 
 ### Implementation for User Story 3
 
-- [ ] T022 [P] [US3] Implementar `app/Domain/User/ValueObject/DocumentConsumer.php` (encapsula CPF — normalize strip `.-/ `, `^[0-9]{11}$`, rejeita todos iguais, valida DV módulo 11) per `spec.md:FR-020` — identidade de `common`
-- [ ] T023 [P] [US3] Implementar `app/Domain/User/ValueObject/DocumentMerchant.php` (encapsula CNPJ — normalize strip `.-/ ` + `uppercase`, `^[A-Z0-9]{12}[0-9]{2}$` IN 2.229/2024, DV `ASCII-48` `A=17...Z=42` pesos 2-9, legacy `^[0-9]{14}$` subset) per `spec.md:FR-020` — identidade de `merchant`
-- [ ] T024 [P] [US3] Implementar `app/Domain/User/ValueObject/Document.php` interface + `DocumentType` enum (cpf/cnpj) + `DocumentFactory::for(UserType): Document` (polimorfismo por type, esconde CPF/CNPJ por trás) per `data-model.md:13`
-- [ ] T025 [P] [US3] Implementar `app/Domain/User/ValueObject/Email.php` (normalize lowercase, valida formato, unicidade) per `spec.md:FR-019`
-- [ ] T026 [P] [US3] Implementar `app/Domain/User/Entity/User.php` + `UserType` enum (common/merchant) agregando Document, Email, passwordHash per `data-model.md:5`
-- [ ] T027 [P] [US3] Implementar `app/Domain/Wallet/Entity/Wallet.php` (balance `Money`, `user_id` unique, never negative) per `data-model.md:29`
-- [ ] T028 [US3] Implementar `app/Application/User/CreateUserUseCase.php` (validação domínio pura antes de I/O, hash senha `password_hash` `PASSWORD_ARGON2ID` (memory 64MiB, time 4, threads 1) fallback `PASSWORD_BCRYPT` cost 12 + `password_verify`/`needs_rehash`, unicidade document/email) per `spec.md:FR-024`, `research.md:Decision 10` e `plan.md:133`
-- [ ] T029 [US3] Implementar `app/Infrastructure/Persistence/UserRepository.php` + `WalletRepository.php` com transação atômica User+Wallet per `plan.md:136` e `data-model.md:113`
-- [ ] T030 [US3] Implementar `app/Controller/UserController.php` (thin controller: validate `full_name`, `document`, `email`, `password` min 8, `type`, delega UseCase) per Constitution I
-- [ ] T031 [US3] Integration test atomicidade User+Wallet em `test/Integration/UserRegistrationTest.php` (rollback em DV inválido, constraint única) per `plan.md:159`
+- [x] T022 [P] [US3] Implementar `app/Domain/User/ValueObject/DocumentConsumer.php` (encapsula CPF — normalize strip `.-/ `, `^[0-9]{11}$`, rejeita todos iguais, valida DV módulo 11) per `spec.md:FR-020` — identidade de `common`
+- [x] T023 [P] [US3] Implementar `app/Domain/User/ValueObject/DocumentMerchant.php` (encapsula CNPJ — normalize strip `.-/ ` + `uppercase`, `^[A-Z0-9]{12}[0-9]{2}$` IN 2.229/2024, DV `ASCII-48` `A=17...Z=42` pesos 2-9, legacy `^[0-9]{14}$` subset) per `spec.md:FR-020` — identidade de `merchant`
+- [x] T024 [P] [US3] Implementar `app/Domain/User/ValueObject/Document.php` interface + `DocumentType` enum (cpf/cnpj) + `DocumentFactory::for(UserType): Document` (polimorfismo por type, esconde CPF/CNPJ por trás) per `data-model.md:13`
+- [x] T025 [P] [US3] Implementar `app/Domain/User/ValueObject/Email.php` (normalize lowercase, valida formato, unicidade) per `spec.md:FR-019`
+- [x] T026 [P] [US3] Implementar `app/Domain/User/Entity/User.php` + `UserType` enum (common/merchant) agregando Document, Email, passwordHash per `data-model.md:5`
+- [x] T027 [P] [US3] Implementar `app/Domain/Wallet/Entity/Wallet.php` (balance `Money`, `user_id` unique, never negative) per `data-model.md:29`
+- [x] T028 [US3] Implementar `app/Application/User/CreateUserUseCase.php` (validação domínio pura antes de I/O, hash senha `password_hash` `PASSWORD_ARGON2ID` (memory 64MiB, time 4, threads 1) fallback `PASSWORD_BCRYPT` cost 12 + `password_verify`/`needs_rehash`, unicidade document/email) per `spec.md:FR-024`, `research.md:Decision 10` e `plan.md:133`
+- [x] T029 [US3] Implementar `app/Infrastructure/Persistence/UserRepository.php` + `WalletRepository.php` com transação atômica User+Wallet per `plan.md:136` e `data-model.md:113`
+- [x] T030 [US3] Implementar `app/Controller/UserController.php` (thin controller: validate `full_name`, `document`, `email`, `password` min 8, `type`, delega UseCase) per Constitution I
+- [x] T031 [US3] Integration test atomicidade User+Wallet em `test/Integration/UserRegistrationTest.php` (rollback em DV inválido, constraint única) per `plan.md:159`
 
 **Checkpoint**: US3 completo — `POST /users` aceita CPF e CNPJ alfa `12ABC34501DE35` com persistência normalizada, bloqueia duplicatas, rejeita 422 sem efeitos colaterais
 

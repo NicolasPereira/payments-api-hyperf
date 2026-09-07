@@ -10,4 +10,6 @@ declare(strict_types=1);
  * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
  */
 return [
+    \App\Domain\Contracts\AuthorizerPort::class => \App\Infrastructure\External\AuthorizerHttpAdapter::class,
+    \App\Domain\Contracts\NotifierPort::class => \App\Infrastructure\External\NotifierHttpAdapter::class,
 ];
