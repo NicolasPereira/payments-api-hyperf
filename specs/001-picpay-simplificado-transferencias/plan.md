@@ -146,8 +146,8 @@ service is introduced.
    balance, create the transfer, debit payer, credit payee and insert the
    pending notification Outbox row.
 7. Return the completed transfer response after commit. A worker claims pending
-   Outbox rows, calls the notifier through its port, retries up to three times,
-   and records delivery status without changing financial state.
+   Outbox rows, calls the notifier through its port, retries up to three times
+   with backoff 10s/60s/300s and `lease_until` 30s, and records delivery status without changing financial state.
 
 ## Testing Strategy
 
@@ -172,8 +172,8 @@ service is introduced.
 - Any financial transaction exception rolls back transfer, both wallet changes,
   and the Outbox row.
 - Notification failure leaves the transfer completed and retries the Outbox up
-  to three times; exhausted rows remain observable as `failed`.
-- A worker lease expiry returns a stuck Outbox row to `pending`.
+  to three times with exponential backoff (`available_at` = 10s → 60s → 300s for attempts 1→3, `data-model.md:87`); exhausted rows remain observable as `failed`.
+- A worker lease expiry (`lease_until` 30s) returns a stuck Outbox row to `pending`.
 - Redis loss can remove the three-minute idempotency window; the durable MySQL
   transfer/audit record remains authoritative for financial history. This is a
   known MVP limitation and must be monitored.
