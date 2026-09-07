@@ -19,7 +19,7 @@
 - [x] Success criteria are technology-agnostic — sem Hyperf/MySQL/Redis, apenas resultados observáveis
 - [x] All acceptance scenarios are defined — 4 user stories com Given/When/Then, incluindo 9 cenários para User Story 3 (CPF/CNPJ)
 - [x] Edge cases are identified — 13 casos incluindo formato inválido, DV inválido, todos iguais, formatação, incompatibilidade tipo-documento, normalização
-- [x] Scope is clearly bounded — transferência `POST /transfer` + cadastro com validação de documento; depósito opcional
+- [x] Scope is clearly bounded — transferência `POST /transfer` + cadastro com validação de documento; depósito explicitamente fora do escopo
 - [x] Dependencies and assumptions identified — autorizador `GET /authorize`, notify `POST /notify`, idempotência, validação domínio
 
 ## Feature Readiness

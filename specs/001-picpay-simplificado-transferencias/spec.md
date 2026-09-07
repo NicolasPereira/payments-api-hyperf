@@ -18,6 +18,10 @@
 - Q: Qual deve ser o comportamento quando a notificação POST /notify falha após transferência concluída? → A: Opção A com Outbox Pattern — fire-and-forget, transferência retorna sucesso imediatamente, notificação registrada via Outbox na mesma transação e retentada async (até 3x) sem reverter saldo.
 - Q: O campo value do POST /transfer deve ser aceito como número ou string decimal exata? → A: Opção B — Exigir string decimal exata (ex: "100.00"), rejeitar number, para garantir exatidão e evitar imprecisão de ponto flutuante.
 
+### Session 2026-09-07 — CNPJ Alfanumérico (IN RFB nº 2.229/2024)
+
+- Q: Como tratar o CNPJ alfanumérico introduzido pela IN RFB 2.229/2024 (vigência julho/2026) para lojistas? → A: CNPJ mantém 14 posições mas passa a aceitar formato alfanumérico `^[A-Z0-9]{12}[0-9]{2}$` (12 alfanuméricos + 2 DVs numéricos). CNPJs legados numéricos `^[0-9]{14}$` permanecem válidos (compatibilidade retroativa). Normalização MUST fazer `uppercase` e remover formatação (`.`, `-`, `/`, espaços) antes de validação/persistência; unicidade é case-insensitive sobre forma normalizada. Validação de DV usa tabela `ASCII-48` (`0-9=0-9`, `A=17...Z=42`) com pesos `2-9` e módulo 11, conforme Manual RFB. CPF permanece `^[0-9]{11}$`.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Transferência entre usuários comuns (Priority: P1)
@@ -26,7 +30,7 @@ Usuário comum com saldo transfere um valor para outro usuário comum via `POST 
 
 **Why this priority**: É o fluxo primário de valor da plataforma e o contrato explicitamente exigido (`POST /transfer`). Sem ele não há MVP.
 
-**Independent Test**: Criar dois usuários comuns com carteiras (ex: payer com 100, payee com 50), `POST /transfer` com `value=10, payer=1, payee=2`, autorizador retorna autorizado, e verificar saldos finais (90 e 60) e notificação disparada. Pode ser testado sem lojistas.
+**Independent Test**: Criar dois usuários comuns com carteiras (ex: payer com 100, payee com 50), `POST /transfer` com `value="10.00", payer=1, payee=2`, autorizador retorna autorizado, e verificar saldos finais (90 e 60) e notificação disparada. Pode ser testado sem lojistas.
 
 **Acceptance Scenarios**:
 
@@ -63,14 +67,18 @@ Cadastro de usuários comuns (CPF) e lojistas (CNPJ) com Nome Completo, document
 **Acceptance Scenarios**:
 
 1. **Given** nenhum usuário com CPF 529.982.247-25 e email a@b.com, **When** cadastrar usuário comum com CPF `529.982.247-25` (formatado), **Then** 201 com usuário e carteira criada com saldo 0 e documento persistido normalizado `52998224725`.
-2. **Given** nenhum usuário com CNPJ 11.222.333/0001-81, **When** cadastrar lojista com CNPJ `11.222.333/0001-81`, **Then** 201 com lojista criado e documento normalizado `11222333000181`.
-3. **Given** usuário comum tenta cadastro com CPF `529.982.247-25` já cadastrado como `52998224725`, **When** enviar requisição, **Then** 409/422 por duplicidade (unicidade sobre forma normalizada).
-4. **Given** cadastro com CPF com formato inválido `123.456`, **When** enviar, **Then** 422 "documento inválido — formato".
-5. **Given** cadastro com CPF com dígitos verificadores inválidos `529.982.247-26`, **When** enviar, **Then** 422 "documento inválido — dígitos verificadores".
-6. **Given** cadastro com CPF com todos dígitos iguais `111.111.111-11`, **When** enviar, **Then** 422.
-7. **Given** cadastro de usuário comum com CNPJ válido `11.222.333/0001-81`, **When** enviar como `common`, **Then** 422 "tipo de documento incompatível com tipo de usuário" (common exige CPF).
-8. **Given** cadastro de lojista com CPF válido `529.982.247-25`, **When** enviar como `merchant`, **Then** 422 "lojista exige CNPJ".
-9. **Given** cadastro com CPF válido formatado ` 529.982.247-25 ` com espaços/pontuação, **When** enviar, **Then** normalizado antes de validar e persiste sem formatação, 201.
+2. **Given** nenhum usuário com CNPJ 11.222.333/0001-81, **When** cadastrar lojista com CNPJ `11.222.333/0001-81` (legado numérico), **Then** 201 com lojista criado e documento normalizado `11222333000181`.
+3. **Given** nenhum usuário com CNPJ alfanumérico `12.ABC.345/01DE-35`, **When** cadastrar lojista com CNPJ `12.ABC.345/01DE-35` (formato alfa IN 2.229/2024), **Then** 201 com documento normalizado `12ABC34501DE35` e DV validado via `ASCII-48`.
+4. **Given** cadastro com CNPJ alfanumérico em minúsculas `12abc34501de35`, **When** enviar, **Then** normalizado para `12ABC34501DE35` e 201 se DV válido (unicidade case-insensitive).
+5. **Given** usuário comum tenta cadastro com CPF `529.982.247-25` já cadastrado como `52998224725`, **When** enviar requisição, **Then** 409/422 por duplicidade (unicidade sobre forma normalizada).
+6. **Given** cadastro com CPF com formato inválido `123.456`, **When** enviar, **Then** 422 "documento inválido — formato".
+7. **Given** cadastro com CPF com dígitos verificadores inválidos `529.982.247-26`, **When** enviar, **Then** 422 "documento inválido — dígitos verificadores".
+8. **Given** cadastro com CNPJ alfanumérico com DV inválido `12ABC34501DE36`, **When** enviar, **Then** 422 "documento inválido — dígitos verificadores".
+9. **Given** cadastro com CPF com todos dígitos iguais `111.111.111-11`, **When** enviar, **Then** 422.
+10. **Given** cadastro de usuário comum com CNPJ válido `11.222.333/0001-81`, **When** enviar como `common`, **Then** 422 "tipo de documento incompatível com tipo de usuário" (common exige CPF).
+11. **Given** cadastro de lojista com CPF válido `529.982.247-25`, **When** enviar como `merchant`, **Then** 422 "lojista exige CNPJ".
+12. **Given** cadastro com CPF válido formatado ` 529.982.247-25 ` com espaços/pontuação, **When** enviar, **Then** normalizado antes de validar e persiste sem formatação, 201.
+13. **Given** cadastro com CNPJ alfanumérico formatado ` 12.abc.345/01de-35 ` com espaços/pontuação e lowercase, **When** enviar, **Then** normalizado (uppercase, sem formatação) antes de validar e persiste `12ABC34501DE35`, 201.
 
 ---
 
@@ -98,15 +106,15 @@ Transferência depende de autorizador externo e notificação assíncrona. Falha
 - `payer == payee` → 422.
 - Saldo exatamente igual ao valor → deve permitir (saldo final 0).
 - Saldo insuficiente por concorrência (duas transferências simultâneas) → apenas uma sucede, outra falha por saldo, sem saldo negativo e sem dupla dedução.
-- Documento inválido por formato (tamanho incorreto, caracteres não numéricos após normalização) → 422 antes de persistência.
-- Documento com dígitos verificadores inválidos (CPF 11 dígitos ou CNPJ 14 dígitos com DV incorreto) → 422.
-- Documento com todos dígitos iguais (ex: `00000000000`, `11111111111`, `00000000000000`) → 422 mesmo que DV coincida.
-- Documento com formatação (pontos, traços, barras, espaços) → deve ser normalizado removendo formatação antes de validação; `529.982.247-25` e `52998224725` são equivalentes para validação, unicidade e persistência.
+- Documento inválido por formato (tamanho incorreto, CPF não-`^[0-9]{11}$` ou CNPJ não-`^[A-Z0-9]{12}[0-9]{2}$` após normalização) → 422 antes de persistência. CNPJ legado `^[0-9]{14}$` permanece válido e é subconjunto do padrão alfa.
+- Documento com dígitos verificadores inválidos (CPF 11 dígitos ou CNPJ 14 chars com DV incorreto via `ASCII-48`/módulo 11) → 422.
+- Documento com todos dígitos iguais (ex: `00000000000`, `11111111111`, `00000000000000`; para CNPJ alfa, sequências com mesmo char repetido) → 422 mesmo que DV coincida.
+- Documento com formatação (pontos, traços, barras, espaços) → deve ser normalizado removendo formatação e convertendo para `uppercase` antes de validação; `529.982.247-25` ≡ `52998224725` e `12.ABC.345/01DE-35` ≡ `12ABC34501DE35` (case-insensitive) são equivalentes para validação, unicidade e persistência.
 - Tipo de usuário incompatível com documento (common com CNPJ, merchant com CPF) → 422.
-- CPF válido mas já cadastrado como mesmo CPF normalizado → 409/422 por unicidade.
+- CPF/CNPJ válido mas já cadastrado como mesmo documento normalizado (CNPJ alfa case-insensitive, ex: `12abc34501de35` ≡ `12ABC34501DE35`) → 409/422 por unicidade.
 - Autorizador externo retorna payload inesperado → tratar como não autorizado/erro.
 - Notificação externa lenta (latência alta) → não deve bloquear resposta da transferência além de timeout configurado; processamento assíncrono/retentativa se necessário.
-- Depósito (fora do escopo P1) — se implementado, deve creditar carteira e ser auditável, mas não é obrigatório para `POST /transfer`.
+- Depósito está fora do escopo desta feature; saldos para testes devem ser providos via seed/migração.
 
 ## Requirements *(mandatory)*
 
@@ -116,7 +124,7 @@ Transferência depende de autorizador externo e notificação assíncrona. Falha
 - **FR-002**: Sistema MUST garantir unicidade de documento (CPF/CNPJ normalizado) e unicidade de e-mail entre todos os usuários (um registro por documento normalizado ou e-mail).
 - **FR-003**: Sistema MUST classificar usuários em dois tipos: `common` (usuário comum) e `merchant` (lojista), persistindo o tipo no cadastro.
 - **FR-004**: Sistema MUST criar e manter uma carteira (balance) por usuário, com saldo não-negativo, inicializado em zero.
-- **FR-005**: Sistema MUST expor endpoint REST `POST /transfer` com payload `{value: number, payer: id, payee: id}` conforme contrato.
+- **FR-005**: Sistema MUST expor endpoint REST `POST /transfer` com payload `{value: string, payer: id, payee: id}` conforme contrato e Clarification Q5.
 - **FR-006**: Sistema MUST permitir que usuários `common` enviem transferências para usuários `common` e para `merchant`.
 - **FR-007**: Sistema MUST impedir que `merchant` realize transferências como payer (apenas recebe).
 - **FR-008**: Sistema MUST exigir que `value` seja string decimal exata com 2 casas decimais (ex: `"100.00"`), positiva e com no máximo 2 casas; valores `number` (ex: `100.0`) MUST ser rejeitados com 422; `payer != payee` MUST ser validado (Clarifications 2026-08-30).
@@ -131,16 +139,16 @@ Transferência depende de autorizador externo e notificação assíncrona. Falha
 - **FR-017**: Sistema MUST tornar operação de transferência idempotente via chave interna (hash de `payer+payee+value`) persistida em Redis com TTL de 3 minutos; repetição dentro da janela MUST retornar mesmo resultado sem duplicar débito/crédito (Clarifications 2026-08-30).
 - **FR-018**: Sistema MUST expor códigos HTTP e mensagens de erro consistentes e em português ou inglês padronizado (422 para validação, 403 para lojista payer, 404 para não encontrado, 503/502 para autorizador indisponível).
 - **FR-019**: Sistema MUST validar unicidade e formato básico de e-mail no cadastro e retornar erro apropriado em duplicidade.
-- **FR-020**: Sistema MUST exigir que usuários `common` possuam CPF válido (11 dígitos) e que `merchant` possuam CNPJ válido (14 dígitos), conforme regras oficiais brasileiras.
-- **FR-021**: Sistema MUST validar CPF e CNPJ conforme regras oficiais brasileiras, incluindo verificação de formato (tamanho após normalização), rejeição de sequências com todos dígitos iguais e validação de dígitos verificadores.
-- **FR-022**: Sistema MUST normalizar documentos antes de validação e antes de persistência, removendo caracteres de formatação (`.`, `-`, `/`, espaços) quando aplicável, e usar forma normalizada para validação, unicidade e armazenamento.
+- **FR-020**: Sistema MUST exigir que usuários `common` possuam CPF válido (11 dígitos `^[0-9]{11}$`) e que `merchant` possuam CNPJ válido (14 posições `^[A-Z0-9]{12}[0-9]{2}$` permitida pela IN RFB nº 2.229/2024 — 12 alfanuméricos + 2 DVs numéricos; legado `^[0-9]{14}$` permanece válido por compatibilidade retroativa), conforme regras oficiais brasileiras.
+- **FR-021**: Sistema MUST validar CPF e CNPJ conforme regras oficiais brasileiras, incluindo verificação de formato (tamanho após normalização, padrão alfa para CNPJ), rejeição de sequências com todos dígitos iguais e validação de dígitos verificadores (CPF módulo 11 tradicional; CNPJ módulo 11 com `valor = ASCII(c) - 48` => `A=17...Z=42`).
+- **FR-022**: Sistema MUST normalizar documentos antes de validação e antes de persistência, removendo caracteres de formatação (`.`, `-`, `/`, espaços) e convertendo para `uppercase` quando aplicável, e usar forma normalizada (CPF `^[0-9]{11}$`, CNPJ `^[A-Z0-9]{12}[0-9]{2}$` uppercase) para validação, unicidade (case-insensitive) e armazenamento.
 - **FR-023**: Sistema MUST rejeitar CPF ou CNPJ inválido (formato inválido ou dígitos verificadores inválidos) com 422 antes de qualquer persistência, sem criar usuário ou carteira e sem efeitos colaterais.
 - **FR-024**: Sistema MUST implementar validação de CPF/CNPJ como regra de domínio pura, sem depender de infraestrutura, banco de dados ou HTTP; validação MUST ocorrer em camada de domínio e ser testável isoladamente.
 - **FR-025**: Sistema MUST rejeitar incompatibilidade entre tipo de usuário e tipo de documento (ex: `common` com CNPJ ou `merchant` com CPF) com 422.
 
 ### Key Entities
 
-- **User**: Representa pessoa no sistema. Atributos: id, nome completo, documento (CPF para `common` — 11 dígitos normalizados — ou CNPJ para `merchant` — 14 dígitos normalizados, único), e-mail (único), senha (hash seguro, mínimo 8 caracteres plain antes de hash), tipo (`common` | `merchant`), timestamps. Documento é armazenado normalizado (apenas dígitos).
+- **User**: Representa pessoa no sistema. Atributos: id, nome completo, documento (CPF para `common` — 11 dígitos `^[0-9]{11}$` normalizados — ou CNPJ para `merchant` — 14 posições `^[A-Z0-9]{12}[0-9]{2}$` uppercase normalizadas, legado numérico `^[0-9]{14}$` compatível, único case-insensitive), e-mail (único), senha (hash seguro, mínimo 8 caracteres plain antes de hash), tipo (`common` | `merchant`), timestamps. Documento é armazenado normalizado (CPF digits only, CNPJ alphanumeric uppercase sem formatação).
 - **Wallet**: Representa carteira financeira de um User. Atributos: id, user_id (FK único), balance (decimal não-negativo com 2 casas, moeda BRL implícita), updated_at. Relacionamento 1:1 com User.
 - **Transfer**: Representa movimentação financeira. Atributos: id, value (string decimal exata convertida para decimal positivo com 2 casas, ex: "100.00"), payer_id (FK User), payee_id (FK User), status (pending/authorized/completed/failed), idempotency_key (interno hash payer+payee+value, opcional), authorized_at, completed_at, external_authorizer_response, created_at. Relaciona payer e payee.
 - **Notification**: Representa tentativa de notificação ao payee. Atributos: id, transfer_id (FK), payee_id, channel (email/sms - abstrato), status (pending/sent/failed), attempts, last_response, created_at.
@@ -159,7 +167,7 @@ Transferência depende de autorizador externo e notificação assíncrona. Falha
 - **SC-008**: Quando autorizador retorna não autorizado ou indisponível, nenhuma transferência altera saldos (0% de débito fantasma).
 - **SC-009**: Em falha durante débito/crédito, transação é revertida e saldos permanecem consistentes (sem saldo negativo ou duplo crédito) em 100% das execuções.
 - **SC-010**: Transferência concluída dispara notificação ao payee; falha da notificação não reverte saldo e é registrada para observabilidade/retentativa.
-- **SC-011**: Operação idempotente: repetição de `POST /transfer` com mesma `Idempotency-Key` retorna mesmo resultado sem segundo débito/crédito.
+- **SC-011**: Operação idempotente: repetição de `POST /transfer` com o mesmo fingerprint interno de `payer+payee+value` dentro da janela de 3 minutos retorna o mesmo resultado sem segundo débito/crédito.
 - **SC-012**: 90% dos usuários conseguem completar transferência válida na primeira tentativa sem assistência.
 - **SC-013**: Sistema mantém taxa de erro < 1% para transferências válidas sob carga de 100 transferências/minuto simuladas.
 
@@ -171,8 +179,8 @@ Transferência depende de autorizador externo e notificação assíncrona. Falha
 - Autorizador `GET https://util.devi.tools/api/v2/authorize` espera resposta com campo indicando autorização (ex: `{status:"authorized"}` ou `{message:"Autorizado"}`); implementação deve tratar variações comuns e mapear não autorizado vs erro.
 - Notificação `POST https://util.devi.tools/api/v1/notify` é fire-and-forget após commit financeiro; timeout curto (ex: 2s) e retentativa assíncrona ou log são aceitáveis para lidar com instabilidade.
 - Valores monetários em BRL (R$) com 2 casas decimais; persistência como `DECIMAL(15,2)` ou inteiro em centavos.
-- Idempotência via `Idempotency-Key` header é opcional para cliente mas MUST ser suportada pelo servidor quando fornecida.
+- Idempotência nesta versão usa fingerprint interno de `payer+payee+value` em Redis com TTL de 3 minutos; `Idempotency-Key` do cliente não faz parte do contrato desta feature.
 - Sistema é RESTFul e stateless; sem necessidade de frontend nesta feature.
 - Carga esperada baixa para MVP; requisitos de performance são para validação, não SLA de produção.
-- Validação de CPF/CNPJ segue regras oficiais brasileiras (formato, normalização e dígitos verificadores); detalhes de implementação serão definidos no plan sem expor biblioteca específica nesta spec.
-
+- Validação de CPF/CNPJ segue regras oficiais brasileiras (formato, normalização e dígitos verificadores) incluindo IN RFB nº 2.229/2024 para CNPJ alfanumérico `^[A-Z0-9]{12}[0-9]{2}$` (`ASCII-48`, pesos `2-9`, módulo 11); detalhes de implementação serão definidos no plan sem expor biblioteca específica nesta spec.
+- CNPJ alfanumérico mantém 14 posições com 2 DVs numéricos e compatibilidade retroativa com CNPJs legados `^[0-9]{14}$`; normalização é case-insensitive (uppercase) e a partir de julho/2026 novos CNPJs podem conter letras.

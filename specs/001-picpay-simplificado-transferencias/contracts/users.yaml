@@ -1,0 +1,114 @@
+openapi: 3.0.3
+info:
+  title: PicPay Simplificado User API
+  version: 1.0.0
+  description: Contract for registering common users and merchants.
+paths:
+  /users:
+    post:
+      summary: Register a user and create an empty wallet
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+            examples:
+              common:
+                value:
+                  full_name: Maria Silva
+                  document: 529.982.247-25
+                  email: maria@example.com
+                  password: password
+                  type: common
+              merchant:
+                value:
+                  full_name: Loja Exemplo
+                  document: 11.222.333/0001-81
+                  email: loja@example.com
+                  password: password
+                  type: merchant
+              merchant_alfa:
+                value:
+                  full_name: Loja Alfa
+                  document: 12.ABC.345/01DE-35
+                  email: loja.alfa@example.com
+                  password: password
+                  type: merchant
+      responses:
+        '201':
+          description: User and zero-balance wallet created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '409':
+          description: Normalized document or email already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Invalid input or invalid document.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    UserRequest:
+      type: object
+      required: [full_name, document, email, password, type]
+      additionalProperties: false
+      properties:
+        full_name:
+          type: string
+          minLength: 1
+        document:
+          type: string
+          description: CPF for common (11 digits) or CNPJ for merchant (14 chars, alphanumeric IN RFB 2.229/2024 — ^[A-Z0-9]{12}[0-9]{2}$, legacy ^[0-9]{14}$ compatible); may contain formatting (., -, /, space) and lowercase for CNPJ (normalized to uppercase before validation).
+          example: 12ABC34501DE35
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        type:
+          type: string
+          enum: [common, merchant]
+    UserResponse:
+      type: object
+      required: [id, full_name, document_type, document, email, type, balance]
+      properties:
+        id:
+          type: integer
+        full_name:
+          type: string
+        document_type:
+          type: string
+          enum: [cpf, cnpj]
+        document:
+          type: string
+          description: Normalized uppercase alphanumeric (CPF ^[0-9]{11}$ or CNPJ ^[A-Z0-9]{12}[0-9]{2}$); legacy numeric CNPJ compatible.
+          pattern: ^([0-9]{11}|[A-Z0-9]{12}[0-9]{2})$
+          example: 12ABC34501DE35
+        email:
+          type: string
+        type:
+          type: string
+          enum: [common, merchant]
+        balance:
+          type: string
+          example: '0.00'
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        correlation_id:
+          type: string
