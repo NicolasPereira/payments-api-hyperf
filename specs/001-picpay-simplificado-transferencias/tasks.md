@@ -79,7 +79,7 @@
 - [ ] T025 [P] [US3] Implementar `app/Domain/User/ValueObject/Email.php` (normalize lowercase, valida formato, unicidade) per `spec.md:FR-019`
 - [ ] T026 [P] [US3] Implementar `app/Domain/User/Entity/User.php` + `UserType` enum (common/merchant) agregando Document, Email, passwordHash per `data-model.md:5`
 - [ ] T027 [P] [US3] Implementar `app/Domain/Wallet/Entity/Wallet.php` (balance `Money`, `user_id` unique, never negative) per `data-model.md:29`
-- [ ] T028 [US3] Implementar `app/Application/User/CreateUserUseCase.php` (validação domínio pura antes de I/O, hash senha via `password_hash`, unicidade document/email) per `spec.md:FR-024` e `plan.md:133`
+- [ ] T028 [US3] Implementar `app/Application/User/CreateUserUseCase.php` (validação domínio pura antes de I/O, hash senha `password_hash` `PASSWORD_ARGON2ID` (memory 64MiB, time 4, threads 1) fallback `PASSWORD_BCRYPT` cost 12 + `password_verify`/`needs_rehash`, unicidade document/email) per `spec.md:FR-024`, `research.md:Decision 10` e `plan.md:133`
 - [ ] T029 [US3] Implementar `app/Infrastructure/Persistence/UserRepository.php` + `WalletRepository.php` com transação atômica User+Wallet per `plan.md:136` e `data-model.md:113`
 - [ ] T030 [US3] Implementar `app/Controller/UserController.php` (thin controller: validate `full_name`, `document`, `email`, `password` min 8, `type`, delega UseCase) per Constitution I
 - [ ] T031 [US3] Integration test atomicidade User+Wallet em `test/Integration/UserRegistrationTest.php` (rollback em DV inválido, constraint única) per `plan.md:159`

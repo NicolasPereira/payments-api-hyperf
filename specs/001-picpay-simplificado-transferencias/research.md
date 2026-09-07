@@ -166,6 +166,15 @@
     clarification and the financial exactness principle.
   - Support both number and string: rejected by clarification Q5.
 
+## Decision 10: Password Hashing (A1 — Ambiguity FR-001 "hash seguro")
+
+- **Decision**: Use PHP `password_hash()` with `PASSWORD_ARGON2ID` as primary (PHP 8.4, `sodium` ext). Fallback to `PASSWORD_BCRYPT` (`cost 12`) if `argon2id` unavailable in runtime. `password_verify()` + `password_needs_rehash()` on login. Store only `password_hash` (`VARCHAR(255)`), never plain.
+- **Rationale**: `Constitution V:119` exige `strict_types` + `Security by default`. `ARGON2ID` (memory-hard, `memory_cost 65536`, `time_cost 4`, `threads 1`) resiste a GPU/ASIC vs `BCRYPT` e é nativo em PHP 8.4; `BCRYPT cost 12` mantém compatibilidade se `sodium` não estiver em container mínimo. Ambos são `one-way` + `salt` automático, validáveis via `password_verify` sem expor PII em logs/OTEL.
+- **Alternatives considered**:
+  - `PASSWORD_BCRYPT` only: rejeitado como primário porque `ARGON2ID` oferece melhor resistência com custo similar em PHP 8.4; mantido como fallback.
+  - `PASSWORD_ARGON2I`: rejeitado — `ARGON2ID` combina resistência `I`+`D`, é recomendado OWASP 2024.
+  - Hash custom/sha256: rejeitado — viola `V:126` (secrets) e não é `adaptive`.
+
 ## Unresolved Decisions for Implementation
 
 No blocking `NEEDS CLARIFICATION` items remain. The following are deliberately
@@ -173,8 +182,7 @@ implementation-level decisions for `/speckit.tasks` and `/speckit.implement`:
 
 - The concrete CPF/CNPJ validation library, if any.
 - Exact application-owned port and adapter class names.
-- Worker polling interval, lease duration, and backoff schedule within the
-  maximum of three attempts.
+- Worker polling interval already decided as `backoff 10s/60s/300s` + `lease 30s` per `plan.md:149` (Decision remediated).
 - Exact authentication strategy, which remains out of scope for this MVP.
 - Exact error message language, while the error codes remain stable.
 - The concrete OpenTelemetry PHP SDK/instrumentation package and exporter;
