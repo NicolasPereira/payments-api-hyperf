@@ -43,7 +43,8 @@
 
 - [ ] T006 Criar migrations MySQL para `users`, `wallets`, `transfers`, `notification_outbox` em `app/Infrastructure/Persistence/Migrations/` per `data-model.md:5`
 - [ ] T007 [P] Implementar `app/Domain/Shared/ValueObject/Money.php` com `DECIMAL(15,2)` exato, sem float, pattern `^[0-9]+\.[0-9]{2}$` per `spec.md:FR-008` e `research.md:Decision 2`
-- [ ] T008 [P] Implementar envelope de erro padronizado `app/Exception/AppException.php` + `app/Exception/ErrorResponse.php` (422/403/404/502/503 + `correlation_id`) per `contracts/transfer.yaml:103` e `contracts/users.yaml:95`
+- [ ] T008 [P] Implementar hierarquia de Domain Exceptions em `app/Domain/Shared/Exception/DomainException.php` (base `code` + `httpStatus` + `businessCode` para métricas/OTEL/event_tracking) + `app/Domain/User/Exception/InvalidDocumentException.php` / `DuplicateDocumentException.php` / `InvalidUserTypeException.php` + `app/Domain/Wallet/Exception/InsufficientBalanceException.php` + `app/Domain/Transfer/Exception/MerchantPayerNotAllowedException.php` / `SelfTransferException.php` / `TransferValidationException.php` (422) per `spec.md:FR-020..FR-025` e `Constitution IV:96`
+- [ ] T008b [P] Implementar `app/Infrastructure/Http/ExceptionMapper.php` + `app/Infrastructure/Http/ErrorResponse.php` mapeando `DomainException->businessCode` para envelope `contracts/transfer.yaml:103`/`users.yaml:95` (`code`, `message`, `correlation_id`) + OTEL `exception.type` + `metrics counter domain_exception_total{code}` per `Constitution VI:152`
 - [ ] T009 [P] Implementar `app/Infrastructure/Persistence/Database.php` helpers de transação + `SELECT FOR UPDATE` ordenado por `user_id` per `plan.md:145`
 - [ ] T010 [P] Implementar `app/Infrastructure/Cache/RedisIdempotencyStore.php` com `SET NX EX 180` atômico per `research.md:Decision 3`
 - [ ] T011 [P] Definir ports `app/Domain/Contracts/AuthorizerPort.php` e `app/Domain/Contracts/NotifierPort.php` + `AuthorizerResult`/`NotifyResult` value objects per `research.md:Decision 6`
@@ -72,9 +73,9 @@
 
 ### Implementation for User Story 3
 
-- [ ] T022 [P] [US3] Implementar `app/Domain/User/ValueObject/Cpf.php` (normalize strip `.-/ `, `^[0-9]{11}$`, rejeita todos iguais, valida DV módulo 11) per `spec.md:FR-021`
-- [ ] T023 [P] [US3] Implementar `app/Domain/User/ValueObject/Cnpj.php` (normalize strip `.-/ ` + `uppercase`, `^[A-Z0-9]{12}[0-9]{2}$`, DV `ASCII-48` `A=17...Z=42` pesos 2-9, legacy `^[0-9]{14}$` subset) per `spec.md:FR-020` e `research.md:Decision 1`
-- [ ] T024 [P] [US3] Implementar `app/Domain/User/ValueObject/Document.php` + `DocumentType` enum (cpf/cnpj) + factory por `type` per `data-model.md:13`
+- [ ] T022 [P] [US3] Implementar `app/Domain/User/ValueObject/DocumentConsumer.php` (encapsula CPF — normalize strip `.-/ `, `^[0-9]{11}$`, rejeita todos iguais, valida DV módulo 11) per `spec.md:FR-020` — identidade de `common`
+- [ ] T023 [P] [US3] Implementar `app/Domain/User/ValueObject/DocumentMerchant.php` (encapsula CNPJ — normalize strip `.-/ ` + `uppercase`, `^[A-Z0-9]{12}[0-9]{2}$` IN 2.229/2024, DV `ASCII-48` `A=17...Z=42` pesos 2-9, legacy `^[0-9]{14}$` subset) per `spec.md:FR-020` — identidade de `merchant`
+- [ ] T024 [P] [US3] Implementar `app/Domain/User/ValueObject/Document.php` interface + `DocumentType` enum (cpf/cnpj) + `DocumentFactory::for(UserType): Document` (polimorfismo por type, esconde CPF/CNPJ por trás) per `data-model.md:13`
 - [ ] T025 [P] [US3] Implementar `app/Domain/User/ValueObject/Email.php` (normalize lowercase, valida formato, unicidade) per `spec.md:FR-019`
 - [ ] T026 [P] [US3] Implementar `app/Domain/User/Entity/User.php` + `UserType` enum (common/merchant) agregando Document, Email, passwordHash per `data-model.md:5`
 - [ ] T027 [P] [US3] Implementar `app/Domain/Wallet/Entity/Wallet.php` (balance `Money`, `user_id` unique, never negative) per `data-model.md:29`
@@ -126,7 +127,7 @@
 
 ### Implementation for User Story 2
 
-- [ ] T046 [US2] Estender `app/Application/Transfer/ExecuteTransferUseCase.php` para validar `payer.type == merchant` → throw `MerchantPayerNotAllowedException` (403) per `spec.md:FR-007`
+- [ ] T046 [US2] Estender `app/Application/Transfer/ExecuteTransferUseCase.php` para validar `payer.type == merchant` → throw `app/Domain/Transfer/Exception/MerchantPayerNotAllowedException.php` (extends `DomainException` 403, `businessCode=merchant_payer_blocked`) + `metrics counter merchant_payer_blocked_total` + OTEL `exception.type` per `spec.md:FR-007` e `Constitution VI:164` (Opção A — guard dentro de US2)
 - [ ] T047 [US2] Ajustar `app/Domain/Transfer/Entity/Transfer.php` para permitir `payee` merchant e atualizar documentação per `spec.md:FR-006`
 - [ ] T048 [US2] Integration test tipo lojista em `test/Integration/MerchantTransferTest.php` (merchant payee credita + notifica, merchant payer bloqueado sem mutação)
 
