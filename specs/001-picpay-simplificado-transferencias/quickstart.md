@@ -66,13 +66,40 @@ Run the transfer request with these variations and verify no balance change:
 - authorizer denied, malformed, unavailable, or timed out: documented `403`,
   `502`, or `503`.
 
-## Idempotency Window
+## Idempotency Window (MVP Limitation — T065)
 
 Send the same transfer request twice within three minutes. The second request
 must return the stored result and must not create a second debit or credit.
 Inspect telemetry for an idempotency hit. Also document the accepted MVP risk:
 two intentional equal transfers for the same payer/payee/value within the
 window share the same internal fingerprint.
+
+### Limitação Idempotência Hash 3min (Research Decision 3)
+
+- **Fingerprint**: `hash(payer+payee+value)` → `sha256("{payer}:{payee}:{value}")` armazenado em Redis com `SET NX EX 180` atômico.
+- **TTL curto 180s**: após expiração, repetição idêntica será re-executada (novo débito/crédito). Perda de Redis remove janela mas mantém audit MySQL `transfers` + `notification_outbox`.
+- **Falso positivo**: duas transferências intencionais iguais (mesmo payer/payee/value) dentro de 3min retornam mesmo resultado sem segundo débito — risco aceito para MVP per `spec.md:FR-017` Clarification C.
+- **Evolução recomendada**: Idempotency-Key do cliente + TTL longo + persistência MySQL (spec clarification + compatibility plan).
+
+### Telemetry (hits/misses)
+
+- **RedisIdempotencyStore** emite structured logs:
+  - `idempotency hit` com `key` quando chave existe (segundachamada dentro da janela)
+  - `idempotency miss` com `key` quando chave não existe
+  - `idempotency reserved` / `idempotency result stored` para criação
+- **ExecuteTransferUseCase** emite:
+  - `idempotency hit cached result` com `fingerprint` + `correlation_id`
+  - `idempotency duplicate without cached result` quando NX falha sem resultado armazenado
+  - Métricas (debug): `metrics idempotency_hit_total` / `metrics idempotency_miss_total` via logger `debug` com `code` = fingerprint prefix
+- **Observabilidade**: filtrar logs `structured.log` por `idempotency` ou `metrics idempotency_*` e correlacionar via `correlation_id` + OTEL `trace_id`/`span_id`.
+- **Exemplo verificação em Docker**:
+  ```bash
+  curl -i -X POST http://localhost:9501/transfer -H 'Content-Type: application/json' -d '{"value":"10.00","payer":1,"payee":2}'
+  curl -i -X POST http://localhost:9501/transfer -H 'Content-Type: application/json' -d '{"value":"10.00","payer":1,"payee":2}' # deve ser hit
+  docker compose exec -T redis redis-cli keys "idempotency:transfer:*"
+  docker compose exec -T redis redis-cli ttl "idempotency:transfer:<hash>"
+  docker compose logs app | grep -i idempotency
+  ```
 
 ## Notification Resilience
 

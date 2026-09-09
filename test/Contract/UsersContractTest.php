@@ -1,10 +1,20 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace HyperfTest\Contract;
 
 use App\Domain\User\Entity\UserType;
+use App\Domain\User\Exception\DuplicateDocumentException;
+use App\Domain\User\Exception\InvalidDocumentException;
 use App\Domain\User\ValueObject\DocumentFactory;
 use App\Domain\User\ValueObject\Email;
 use PHPUnit\Framework\TestCase;
@@ -13,7 +23,9 @@ use PHPUnit\Framework\TestCase;
  * T021 Contract test POST /users (unit-level contract validation without HTTP server)
  * Covers: 201 common/merchant/merchant_alfa, 409 duplicata, 422 formato/DV/tipo
  * Uses domain VOs to emulate contract behavior; integration HTTP tests are in T031.
- * Per contracts/users.yaml
+ * Per contracts/users.yaml.
+ * @internal
+ * @coversNothing
  */
 final class UsersContractTest extends TestCase
 {
@@ -60,7 +72,7 @@ final class UsersContractTest extends TestCase
         $docB = DocumentFactory::for(UserType::COMMON, '52998224725');
         self::assertTrue($docA->getValue() === $docB->getValue());
         // In real repo, existsByDocument('52998224725') would return true => 409 DuplicateDocumentException
-        $exception = new \App\Domain\User\Exception\DuplicateDocumentException();
+        $exception = new DuplicateDocumentException();
         self::assertSame(409, $exception->getHttpStatus());
         self::assertSame('duplicate_document', $exception->getBusinessCode());
     }
@@ -71,37 +83,37 @@ final class UsersContractTest extends TestCase
         $e2 = new Email('a@B.com');
         self::assertTrue($e1->equals($e2));
         // duplicate email also maps to 409
-        $exception = new \App\Domain\User\Exception\DuplicateDocumentException('E-mail já cadastrado');
+        $exception = new DuplicateDocumentException('E-mail já cadastrado');
         self::assertSame(409, $exception->getHttpStatus());
     }
 
     public function testContractInvalidFormatShouldBe422(): void
     {
-        $this->expectException(\App\Domain\User\Exception\InvalidDocumentException::class);
+        $this->expectException(InvalidDocumentException::class);
         DocumentFactory::for(UserType::COMMON, '123.456');
     }
 
     public function testContractInvalidDvShouldBe422(): void
     {
-        $this->expectException(\App\Domain\User\Exception\InvalidDocumentException::class);
+        $this->expectException(InvalidDocumentException::class);
         DocumentFactory::for(UserType::COMMON, '529.982.247-26');
     }
 
     public function testContractInvalidAlfaDvShouldBe422(): void
     {
-        $this->expectException(\App\Domain\User\Exception\InvalidDocumentException::class);
+        $this->expectException(InvalidDocumentException::class);
         DocumentFactory::for(UserType::MERCHANT, '12ABC34501DE36');
     }
 
     public function testContractTypeMismatchCommonWithCnpjShouldBe422(): void
     {
-        $this->expectException(\App\Domain\User\Exception\InvalidDocumentException::class);
+        $this->expectException(InvalidDocumentException::class);
         DocumentFactory::for(UserType::COMMON, '11.222.333/0001-81');
     }
 
     public function testContractTypeMismatchMerchantWithCpfShouldBe422(): void
     {
-        $this->expectException(\App\Domain\User\Exception\InvalidDocumentException::class);
+        $this->expectException(InvalidDocumentException::class);
         DocumentFactory::for(UserType::MERCHANT, '529.982.247-25');
     }
 

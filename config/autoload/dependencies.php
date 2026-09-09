@@ -9,7 +9,20 @@ declare(strict_types=1);
  * @contact  group@hyperf.io
  * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
  */
+use App\Domain\Contracts\AuthorizerPort;
+use App\Domain\Contracts\NotifierPort;
+use App\Infrastructure\External\AuthorizerHttpAdapter;
+use App\Infrastructure\External\NotifierHttpAdapter;
+
+/*
+ * This file is part of Hyperf.
+ *
+ * @see     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 return [
-    \App\Domain\Contracts\AuthorizerPort::class => \App\Infrastructure\External\AuthorizerHttpAdapter::class,
-    \App\Domain\Contracts\NotifierPort::class => \App\Infrastructure\External\NotifierHttpAdapter::class,
+    AuthorizerPort::class => AuthorizerHttpAdapter::class,
+    NotifierPort::class => NotifierHttpAdapter::class,
 ];

@@ -1,6 +1,14 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace HyperfTest\Unit\Application\Transfer;
 
@@ -8,7 +16,10 @@ use App\Application\Transfer\ExecuteTransferUseCase;
 use App\Domain\Contracts\AuthorizerPort;
 use App\Domain\Contracts\AuthorizerRequest;
 use App\Domain\Contracts\AuthorizerResult;
+use App\Domain\Shared\Exception\DomainException;
 use App\Domain\Shared\ValueObject\Money;
+use App\Domain\Transfer\Exception\SelfTransferException;
+use App\Domain\Transfer\Exception\TransferValidationException;
 use App\Domain\User\Entity\User;
 use App\Domain\User\Entity\UserType;
 use App\Domain\User\ValueObject\DocumentFactory;
@@ -22,49 +33,16 @@ use App\Infrastructure\Persistence\UserRepository;
 use App\Infrastructure\Persistence\WalletRepository;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use Throwable;
 
 /**
  * T034 Unit test ExecuteTransferUseCase with mocks
- * (saldo insuficiente →422, sem mutação, authorize antes de transação)
+ * (saldo insuficiente →422, sem mutação, authorize antes de transação).
+ * @internal
+ * @coversNothing
  */
 final class ExecuteTransferTest extends TestCase
 {
-    private function makeCommonUser(int $id, string $cpf, string $email): User
-    {
-        $doc = DocumentFactory::for(UserType::COMMON, $cpf);
-        $em = new Email($email);
-        $hash = password_hash('password123', PASSWORD_BCRYPT);
-
-        return new User('User ' . $id, $doc, $em, $hash, UserType::COMMON, $id);
-    }
-
-    private function mockAuthorizer(bool $authorized, string $raw = '{"status":"success","data":{"authorization":true}}', ?string $code = null): AuthorizerPort
-    {
-        $result = $authorized
-            ? AuthorizerResult::authorized($raw)
-            : AuthorizerResult::denied($raw, 'denied');
-
-        if ($code !== null && !$authorized) {
-            $result = AuthorizerResult::failed($raw, $code, 'fail');
-        }
-
-        $mock = $this->createMock(AuthorizerPort::class);
-        $mock->method('authorize')->willReturn($result);
-
-        return $mock;
-    }
-
-    private function mockRedisEmpty(): RedisIdempotencyStore
-    {
-        $mock = $this->createMock(RedisIdempotencyStore::class);
-        $mock->method('get')->willReturn(null);
-        $mock->method('tryReserve')->willReturn(true);
-        $mock->method('storeResult')->willReturn(null);
-        $mock->method('exists')->willReturn(false);
-
-        return $mock;
-    }
-
     public function testInsufficientBalanceThrows422WithoutMutatingAndWithoutAuthorizer(): void
     {
         $payer = $this->makeCommonUser(1, '529.982.247-25', 'payer.' . uniqid() . '@example.com');
@@ -125,7 +103,7 @@ final class ExecuteTransferTest extends TestCase
         $authorizerCalls = 0;
         $authorizer = $this->createMock(AuthorizerPort::class);
         $authorizer->method('authorize')->willReturnCallback(function () use (&$authorizerCalls) {
-            $authorizerCalls++;
+            ++$authorizerCalls;
             return AuthorizerResult::authorized('ok');
         });
 
@@ -181,7 +159,7 @@ final class ExecuteTransferTest extends TestCase
         try {
             $useCase->execute(['value' => '10.00', 'payer' => 30, 'payee' => 40]);
             self::fail('Expected authorizer denied 403');
-        } catch (\App\Domain\Shared\Exception\DomainException $e) {
+        } catch (DomainException $e) {
             self::assertSame(403, $e->getHttpStatus());
             // confirm no wallet mutation happened (mock expects never)
         }
@@ -230,7 +208,7 @@ final class ExecuteTransferTest extends TestCase
             // In unit env without DB, Database::transaction will attempt Db::transaction and fail.
             // We still verify authorize was called before the failure.
             self::assertCount(1, $calls, 'Authorize should be called exactly once before transaction');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // If it threw before authorize, call count would be 0; ensure it was called
             self::assertCount(1, $calls, 'Authorize should have been called before transaction even when DB fails: ' . $e->getMessage());
             // For insufficient DB, the exception is not the focus — we already verified authorize before transaction
@@ -239,7 +217,7 @@ final class ExecuteTransferTest extends TestCase
                 self::fail('Unexpected insufficient balance in valid payload test');
             }
             // Swallow DB-related exception for this ordering test
-            if (!str_contains($e->getMessage(), 'authorizer') && $calls !== []) {
+            if (! str_contains($e->getMessage(), 'authorizer') && $calls !== []) {
                 // Mark as passed for ordering
                 self::assertTrue(true);
                 return;
@@ -265,7 +243,7 @@ final class ExecuteTransferTest extends TestCase
             new NullLogger()
         );
 
-        $this->expectException(\App\Domain\Transfer\Exception\SelfTransferException::class);
+        $this->expectException(SelfTransferException::class);
         $useCase->execute(['value' => '10.00', 'payer' => 1, 'payee' => 1]);
     }
 
@@ -286,7 +264,42 @@ final class ExecuteTransferTest extends TestCase
             new NullLogger()
         );
 
-        $this->expectException(\App\Domain\Transfer\Exception\TransferValidationException::class);
+        $this->expectException(TransferValidationException::class);
         $useCase->execute(['value' => 10.0, 'payer' => 1, 'payee' => 2]);
+    }
+
+    private function makeCommonUser(int $id, string $cpf, string $email): User
+    {
+        $doc = DocumentFactory::for(UserType::COMMON, $cpf);
+        $em = new Email($email);
+        $hash = password_hash('password123', PASSWORD_BCRYPT);
+
+        return new User('User ' . $id, $doc, $em, $hash, UserType::COMMON, $id);
+    }
+
+    private function mockAuthorizer(bool $authorized, string $raw = '{"status":"success","data":{"authorization":true}}', ?string $code = null): AuthorizerPort
+    {
+        $result = $authorized
+            ? AuthorizerResult::authorized($raw)
+            : AuthorizerResult::denied($raw, 'denied');
+
+        if ($code !== null && ! $authorized) {
+            $result = AuthorizerResult::failed($raw, $code, 'fail');
+        }
+
+        $mock = $this->createMock(AuthorizerPort::class);
+        $mock->method('authorize')->willReturn($result);
+
+        return $mock;
+    }
+
+    private function mockRedisEmpty(): RedisIdempotencyStore
+    {
+        $mock = $this->createMock(RedisIdempotencyStore::class);
+        $mock->method('get')->willReturn(null);
+        $mock->method('tryReserve')->willReturn(true);
+        $mock->method('exists')->willReturn(false);
+
+        return $mock;
     }
 }

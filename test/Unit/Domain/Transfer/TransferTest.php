@@ -1,6 +1,14 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace HyperfTest\Unit\Domain\Transfer;
 
@@ -14,7 +22,9 @@ use App\Domain\User\Entity\UserType;
 use PHPUnit\Framework\TestCase;
 
 /**
- * T033 Unit test Transfer invariants (payer≠payee, payer must be common, value positive)
+ * T033 Unit test Transfer invariants (payer≠payee, payer must be common, value positive).
+ * @internal
+ * @coversNothing
  */
 final class TransferTest extends TestCase
 {

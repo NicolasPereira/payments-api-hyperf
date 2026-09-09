@@ -27,11 +27,11 @@
 
 **Purpose**: Inicialização Hyperf 3.2 + tooling exigido pela Constitution
 
-- [ ] T001 Verificar runtime PHP 8.4 + Hyperf 3.2 + Swoole 6.2.2 + MySQL 8.4 + Redis 8 via `docker-compose.yml` e `composer.json`
-- [ ] T002 [P] Configurar PHP-CS-Fixer PER-CS (`.php-cs-fixer.php`) e validar `composer fix` dry-run
-- [ ] T003 [P] Configurar PHPStan (`phpstan.neon.dist`) nível adequado e validar `composer analyse`
-- [ ] T004 [P] Configurar `config/autoload/` e PSR-4 autoload em `composer.json` para `App\` → `app/`
-- [ ] T005 Criar estrutura base `app/Domain/`, `app/Application/`, `app/Infrastructure/`, `app/Controller/`, `test/Unit/`, `test/Integration/`, `test/Contract/` per `plan.md:92`
+- [x] T001 Verificar runtime PHP 8.4 + Hyperf 3.2 + Swoole 6.2.2 + MySQL 8.4 + Redis 8 via `docker-compose.yml` e `composer.json`
+- [x] T002 [P] Configurar PHP-CS-Fixer PER-CS (`.php-cs-fixer.php`) e validar `composer fix` dry-run
+- [x] T003 [P] Configurar PHPStan (`phpstan.neon.dist`) nível adequado e validar `composer analyse`
+- [x] T004 [P] Configurar `config/autoload/` e PSR-4 autoload em `composer.json` para `App\` → `app/`
+- [x] T005 Criar estrutura base `app/Domain/`, `app/Application/`, `app/Infrastructure/`, `app/Controller/`, `test/Unit/`, `test/Integration/`, `test/Contract/` per `plan.md:92`
 
 ---
 
@@ -95,21 +95,21 @@
 
 ### Tests for User Story 1 (TDD)
 
-- [ ] T032 [P] [US1] Unit test `Money` parsing/validation em `test/Unit/Domain/Transfer/MoneyTest.php` (string exata `"10.00"`, rejeita `number` 10.0, zero, negativo, `>2` decimais → 422)
-- [ ] T033 [P] [US1] Unit test `Transfer` invariants em `test/Unit/Domain/Transfer/TransferTest.php` (payer≠payee, payer must be common, value positive)
-- [ ] T034 [P] [US1] Unit test `ExecuteTransferUseCase` com mocks em `test/Unit/Application/Transfer/ExecuteTransferTest.php` (saldo insuficiente → 422, sem mutação, authorize antes de transação)
-- [ ] T035 [P] [US1] Contract test `POST /transfer` valid em `test/Contract/TransferContractTest.php` (200/201 completed/queued, 422 saldo, 404 missing, 422 self-transfer)
-- [ ] T036 [P] [US1] Integration test transação atômica em `test/Integration/TransferAtomicTest.php` (lock `FOR UPDATE` asc `user_id`, recheck balance, rollback em falha, concorrência 2 transfers simultâneas → sem saldo negativo)
+- [x] T032 [P] [US1] Unit test `Money` parsing/validation em `test/Unit/Domain/Transfer/MoneyTest.php` (string exata `"10.00"`, rejeita `number` 10.0, zero, negativo, `>2` decimais → 422)
+- [x] T033 [P] [US1] Unit test `Transfer` invariants em `test/Unit/Domain/Transfer/TransferTest.php` (payer≠payee, payer must be common, value positive)
+- [x] T034 [P] [US1] Unit test `ExecuteTransferUseCase` com mocks em `test/Unit/Application/Transfer/ExecuteTransferTest.php` (saldo insuficiente → 422, sem mutação, authorize antes de transação)
+- [x] T035 [P] [US1] Contract test `POST /transfer` valid em `test/Contract/TransferContractTest.php` (200/201 completed/queued, 422 saldo, 404 missing, 422 self-transfer)
+- [x] T036 [P] [US1] Integration test transação atômica em `test/Integration/TransferAtomicTest.php` (lock `FOR UPDATE` asc `user_id`, recheck balance, rollback em falha, concorrência 2 transfers simultâneas → sem saldo negativo)
 
 ### Implementation for User Story 1
 
-- [ ] T037 [P] [US1] Implementar `app/Domain/Transfer/ValueObject/TransferValue.php` (parse string `"100.00"` → centavos/DECIMAL, valida pattern `^(?!0+\.00$)[0-9]+\.[0-9]{2}$`) per `contracts/transfer.yaml:75`
-- [ ] T038 [P] [US1] Implementar `app/Domain/Transfer/Entity/Transfer.php` + `TransferStatus` enum (pending/authorized/completed/failed) + transitions per `data-model.md:58`
-- [ ] T039 [US1] Implementar `app/Application/Transfer/ExecuteTransferUseCase.php` fluxo `plan.md:133` (valida payload → idempotency fingerprint `hash(payer+payee+value)` Redis NX → load payer/payee → reject self/404 → balance check → AuthorizerPort → transaction lock wallets asc → recheck → debit/credit → create Transfer → insert Outbox `pending`)
-- [ ] T040 [US1] Implementar `app/Infrastructure/Persistence/TransferRepository.php` per `data-model.md:41`
-- [ ] T041 [US1] Implementar `app/Infrastructure/Persistence/NotificationOutboxRepository.php` per `data-model.md:74` (pending/processing/sent/failed, attempts ≤3)
-- [ ] T042 [US1] Implementar `app/Controller/TransferController.php` (thin, valida `value` string, delega UseCase, mapeia 422/403/404/502/503) per `contracts/transfer.yaml:24`
-- [ ] T043 [US1] Integration test idempotency Redis em `test/Integration/IdempotencyTest.php` (2× mesmo `payer+payee+value` em 3min → mesmo resultado sem duplo débito, TTL 180s)
+- [x] T037 [P] [US1] Implementar `app/Domain/Transfer/ValueObject/TransferValue.php` (parse string `"100.00"` → centavos/DECIMAL, valida pattern `^(?!0+\.00$)[0-9]+\.[0-9]{2}$`) per `contracts/transfer.yaml:75`
+- [x] T038 [P] [US1] Implementar `app/Domain/Transfer/Entity/Transfer.php` + `TransferStatus` enum (pending/authorized/completed/failed) + transitions per `data-model.md:58`
+- [x] T039 [US1] Implementar `app/Application/Transfer/ExecuteTransferUseCase.php` fluxo `plan.md:133` (valida payload → idempotency fingerprint `hash(payer+payee+value)` Redis NX → load payer/payee → reject self/404 → balance check → AuthorizerPort → transaction lock wallets asc → recheck → debit/credit → create Transfer → insert Outbox `pending`)
+- [x] T040 [US1] Implementar `app/Infrastructure/Persistence/TransferRepository.php` per `data-model.md:41`
+- [x] T041 [US1] Implementar `app/Infrastructure/Persistence/NotificationOutboxRepository.php` per `data-model.md:74` (pending/processing/sent/failed, attempts ≤3)
+- [x] T042 [US1] Implementar `app/Controller/TransferController.php` (thin, valida `value` string, delega UseCase, mapeia 422/403/404/502/503) per `contracts/transfer.yaml:24`
+- [x] T043 [US1] Integration test idempotency Redis em `test/Integration/IdempotencyTest.php` (2× mesmo `payer+payee+value` em 3min → mesmo resultado sem duplo débito, TTL 180s)
 
 **Checkpoint**: US1 MVP funcional — common→common transfer completa com saldo exato, idempotente, Outbox transacional
 
@@ -122,14 +122,14 @@
 
 ### Tests for User Story 2
 
-- [ ] T044 [P] [US2] Contract test common→merchant em `test/Contract/TransferMerchantTest.php` (200/201 saldos 30/30 para 50→10 +20)
-- [ ] T045 [P] [US2] Contract test merchant payer rejection em `test/Contract/MerchantPayerRejectionTest.php` (403/422 "lojista não pode enviar")
+- [x] T044 [P] [US2] Contract test common→merchant em `test/Contract/TransferMerchantTest.php` (200/201 saldos 30/30 para 50→10 +20)
+- [x] T045 [P] [US2] Contract test merchant payer rejection em `test/Contract/MerchantPayerRejectionTest.php` (403/422 "lojista não pode enviar")
 
 ### Implementation for User Story 2
 
-- [ ] T046 [US2] Estender `app/Application/Transfer/ExecuteTransferUseCase.php` para validar `payer.type == merchant` → throw `app/Domain/Transfer/Exception/MerchantPayerNotAllowedException.php` (extends `DomainException` 403, `businessCode=merchant_payer_blocked`) + `metrics counter merchant_payer_blocked_total` + OTEL `exception.type` per `spec.md:FR-007` e `Constitution VI:164` (Opção A — guard dentro de US2)
-- [ ] T047 [US2] Ajustar `app/Domain/Transfer/Entity/Transfer.php` para permitir `payee` merchant e atualizar documentação per `spec.md:FR-006`
-- [ ] T048 [US2] Integration test tipo lojista em `test/Integration/MerchantTransferTest.php` (merchant payee credita + notifica, merchant payer bloqueado sem mutação)
+- [x] T046 [US2] Estender `app/Application/Transfer/ExecuteTransferUseCase.php` para validar `payer.type == merchant` → throw `app/Domain/Transfer/Exception/MerchantPayerNotAllowedException.php` (extends `DomainException` 403, `businessCode=merchant_payer_blocked`) + `metrics counter merchant_payer_blocked_total` + OTEL `exception.type` per `spec.md:FR-007` e `Constitution VI:164` (Opção A — guard dentro de US2)
+- [x] T047 [US2] Ajustar `app/Domain/Transfer/Entity/Transfer.php` para permitir `payee` merchant e atualizar documentação per `spec.md:FR-006`
+- [x] T048 [US2] Integration test tipo lojista em `test/Integration/MerchantTransferTest.php` (merchant payee credita + notifica, merchant payer bloqueado sem mutação)
 
 **Checkpoint**: US1+US2 funcionais — regra lojista só recebe garantida
 
@@ -142,18 +142,18 @@
 
 ### Tests for User Story 4
 
-- [ ] T049 [P] [US4] Contract test authorizer em `test/Contract/AuthorizerContractTest.php` (authorized `{status:success, data:{authorization:true}}` → proceed; denied/malformed/5xx/timeout → 403/502/503 sem mutação)
-- [ ] T050 [P] [US4] Contract test notifier em `test/Contract/NotifierContractTest.php` (204 → sent; 4xx/5xx/timeout → pending retry, ≤3 attempts, não reverte saldo)
-- [ ] T051 [P] [US4] Integration test Outbox worker em `test/Integration/OutboxWorkerTest.php` (commit Transfer+Outbox atômico, worker claim `pending→processing→sent`, lease expiry `processing→pending`, `failed` após 3)
+- [x] T049 [P] [US4] Contract test authorizer em `test/Contract/AuthorizerContractTest.php` (authorized `{status:success, data:{authorization:true}}` → proceed; denied/malformed/5xx/timeout → 403/502/503 sem mutação)
+- [x] T050 [P] [US4] Contract test notifier em `test/Contract/NotifierContractTest.php` (204 → sent; 4xx/5xx/timeout → pending retry, ≤3 attempts, não reverte saldo)
+- [x] T051 [P] [US4] Integration test Outbox worker em `test/Integration/OutboxWorkerTest.php` (commit Transfer+Outbox atômico, worker claim `pending→processing→sent`, lease expiry `processing→pending`, `failed` após 3)
 
 ### Implementation for User Story 4
 
-- [ ] T052 [US4] Implementar tratamento authorizer em `app/Application/Transfer/ExecuteTransferUseCase.php` (mapeia não autorizado → 403, malformed/timeout/5xx → 502/503, garante sem mutação antes de transação) per `contracts/external-services.md:4`
-- [ ] T053 [US4] Implementar `app/Application/Notification/ProcessNotificationOutboxUseCase.php` (claim pending, chama NotifierPort, registra `last_response`, incrementa `attempts`, `available_at` backoff, `sent`/`pending`/`failed`) per `data-model.md:94`
-- [ ] T054 [US4] Implementar `app/Infrastructure/Notification/OutboxWorker.php` (Hyperf Process `config/autoload/processes.php`, polling + `lease_until`, retry ≤3) per `plan.md:116` e `research.md:Decision 5`
-- [ ] T055 [US4] Implementar `app/Infrastructure/Notification/OutboxWorkerProcess.php` registration em `config/autoload/processes.php`
-- [ ] T056 [US4] Adicionar correlação/tracing em `app/Application/Transfer/ExecuteTransferUseCase.php` e `OutboxWorker.php` (correlation_id, OTEL spans para authorize/transfer/notify) per Constitution VI
-- [ ] T057 [US4] Integration test resiliência completa em `test/Integration/ExternalResilienceTest.php` (authorizer indisponível 503 sem débito, notifier timeout mantém completed, idempotency Redis loss mantém audit MySQL)
+- [x] T052 [US4] Implementar tratamento authorizer em `app/Application/Transfer/ExecuteTransferUseCase.php` (mapeia não autorizado → 403, malformed/timeout/5xx → 502/503, garante sem mutação antes de transação) per `contracts/external-services.md:4`
+- [x] T053 [US4] Implementar `app/Application/Notification/ProcessNotificationOutboxUseCase.php` (claim pending, chama NotifierPort, registra `last_response`, incrementa `attempts`, `available_at` backoff, `sent`/`pending`/`failed`) per `data-model.md:94`
+- [x] T054 [US4] Implementar `app/Infrastructure/Notification/OutboxWorker.php` (Hyperf Process `config/autoload/processes.php`, polling + `lease_until`, retry ≤3) per `plan.md:116` e `research.md:Decision 5`
+- [x] T055 [US4] Implementar `app/Infrastructure/Notification/OutboxWorkerProcess.php` registration em `config/autoload/processes.php`
+- [x] T056 [US4] Adicionar correlação/tracing em `app/Application/Transfer/ExecuteTransferUseCase.php` e `OutboxWorker.php` (correlation_id, OTEL spans para authorize/transfer/notify) per Constitution VI
+- [x] T057 [US4] Integration test resiliência completa em `test/Integration/ExternalResilienceTest.php` (authorizer indisponível 503 sem débito, notifier timeout mantém completed, idempotency Redis loss mantém audit MySQL)
 
 **Checkpoint**: Todas as transferências resilientes — authorizer bloqueia mutação, notificação fire-and-forget com Outbox
 
@@ -163,14 +163,14 @@
 
 **Purpose**: Validação end-to-end, qualidade e documentação
 
-- [ ] T058 [P] Executar `quickstart.md` validação completa (registro CPF/CNPJ alfa, transferências, idempotency 3min, resiliência) em ambiente Docker `http://localhost:9501`
-- [ ] T059 [P] Adicionar seed/migration de saldos para testes (`database/seeders/TestBalanceSeeder.php`) — sem endpoint `/deposit` per `spec.md:Clarification 2026-08-30`
-- [ ] T060 [P] Unit tests adicionais edge cases em `test/Unit/Domain/Shared/EdgeCasesTest.php` (value zero/negativo/number, payer==payee, documento lowercase com espaços, email case-insensitive)
-- [ ] T061 [P] Performance smoke 100 transfers/min em `test/Integration/PerformanceTest.php` per `spec.md:SC-013`
-- [ ] T062 [P] Security hardening em `app/Controller/` (rate limiting, replay protection, input validation boundaries, no PII/secrets em logs) per Constitution V
-- [ ] T063 Rodar quality gates: `composer test`, `composer analyse`, `./vendor/bin/php-cs-fixer fix --dry-run --diff` e corrigir violações per `plan.md:165`
-- [ ] T064 Atualizar `README.md` e `specs/001-picpay-simplificado-transferencias/checklists/requirements.md` com status final
-- [ ] T065 [P] Documentar limitação idempotência hash 3min em `quickstart.md` + telemetry (hits/misses) per `research.md:Decision 3`
+- [x] T058 [P] Executar `quickstart.md` validação completa (registro CPF/CNPJ alfa, transferências, idempotency 3min, resiliência) em ambiente Docker `http://localhost:9501`
+- [x] T059 [P] Adicionar seed/migration de saldos para testes (`database/seeders/TestBalanceSeeder.php`) — sem endpoint `/deposit` per `spec.md:Clarification 2026-08-30`
+- [x] T060 [P] Unit tests adicionais edge cases em `test/Unit/Domain/Shared/EdgeCasesTest.php` (value zero/negativo/number, payer==payee, documento lowercase com espaços, email case-insensitive)
+- [x] T061 [P] Performance smoke 100 transfers/min em `test/Integration/PerformanceTest.php` per `spec.md:SC-013`
+- [x] T062 [P] Security hardening em `app/Controller/` (rate limiting, replay protection, input validation boundaries, no PII/secrets em logs) per Constitution V
+- [x] T063 Rodar quality gates: `composer test`, `composer analyse`, `./vendor/bin/php-cs-fixer fix --dry-run --diff` e corrigir violações per `plan.md:165`
+- [x] T064 Atualizar `README.md` e `specs/001-picpay-simplificado-transferencias/checklists/requirements.md` com status final
+- [x] T065 [P] Documentar limitação idempotência hash 3min em `quickstart.md` + telemetry (hits/misses) per `research.md:Decision 3`
 
 ---
 

@@ -1,6 +1,14 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace HyperfTest\Unit\Domain\User;
 
@@ -10,7 +18,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * T018 Unit test CNPJ alfanumérico IN 2.229/2024
- * 12.ABC.345/01DE-35 => 12ABC34501DE35, case-insensitive, ASCII-48 pesos 2-9, DV invalid 12ABC34501DE36 => 422
+ * 12.ABC.345/01DE-35 => 12ABC34501DE35, case-insensitive, ASCII-48 pesos 2-9, DV invalid 12ABC34501DE36 => 422.
+ * @internal
+ * @coversNothing
  */
 final class CnpjAlfaTest extends TestCase
 {

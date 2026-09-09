@@ -1,6 +1,14 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace App\Application\User;
 
@@ -13,9 +21,12 @@ use App\Domain\User\Exception\InvalidDocumentException;
 use App\Domain\User\Exception\InvalidUserTypeException;
 use App\Domain\User\ValueObject\DocumentFactory;
 use App\Domain\User\ValueObject\Email;
+use App\Domain\Wallet\Entity\Wallet;
 use App\Infrastructure\Persistence\Database;
 use App\Infrastructure\Persistence\UserRepository;
 use App\Infrastructure\Persistence\WalletRepository;
+use RuntimeException;
+use ValueError;
 
 final class CreateUserUseCase
 {
@@ -27,7 +38,7 @@ final class CreateUserUseCase
 
     /**
      * @param array{full_name:string, document:string, email:string, password:string, type:string} $input
-     * @return array{user:User, wallet:\App\Domain\Wallet\Entity\Wallet}
+     * @return array{user:User, wallet:Wallet}
      *
      * @throws DomainException
      */
@@ -52,7 +63,7 @@ final class CreateUserUseCase
 
         try {
             $userType = UserType::from($rawType);
-        } catch (\ValueError $e) {
+        } catch (ValueError $e) {
             throw new InvalidUserTypeException('Tipo de usuário inválido — deve ser common ou merchant');
         }
 
@@ -88,14 +99,12 @@ final class CreateUserUseCase
         }
 
         // 3. Atomic User + Wallet persistence (plan.md:136, data-model.md:113)
-        $result = Database::transaction(function () use ($user) {
+        return Database::transaction(function () use ($user) {
             $persistedUser = $this->users->create($user);
             $wallet = $this->wallets->createForUser($persistedUser->getId() ?? 0, Money::zero());
 
             return ['user' => $persistedUser, 'wallet' => $wallet];
         });
-
-        return $result;
     }
 
     private function hashPassword(string $plain): string
@@ -115,8 +124,8 @@ final class CreateUserUseCase
 
         // Fallback: BCRYPT cost 12
         $hash = password_hash($plain, PASSWORD_BCRYPT, ['cost' => 12]);
-        if (!is_string($hash) || $hash === '') {
-            throw new \RuntimeException('Falha ao gerar hash de senha');
+        if (! is_string($hash) || $hash === '') {
+            throw new RuntimeException('Falha ao gerar hash de senha');
         }
 
         return $hash;

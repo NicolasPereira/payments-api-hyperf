@@ -1,6 +1,14 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace App\Infrastructure\Http;
 
@@ -8,7 +16,7 @@ use JsonSerializable;
 
 /**
  * Consistent JSON error envelope per contracts/transfer.yaml:103 / users.yaml:95
- * { code, message, correlation_id }
+ * { code, message, correlation_id }.
  */
 final class ErrorResponse implements JsonSerializable
 {

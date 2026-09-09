@@ -1,10 +1,17 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace HyperfTest\Unit\Domain\Transfer;
 
-use App\Domain\Shared\Exception\DomainException;
 use App\Domain\Shared\ValueObject\Money;
 use App\Domain\Transfer\Exception\TransferValidationException;
 use App\Domain\Transfer\ValueObject\TransferValue;
@@ -12,11 +19,13 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * T032 Unit test Money parsing/validation
- * (string exata "10.00", rejeita number, zero, negativo, >2 decimais → 422)
+ * (string exata "10.00", rejeita number, zero, negativo, >2 decimais → 422).
+ * @internal
+ * @coversNothing
  */
 final class MoneyTest extends TestCase
 {
-    public function testValidStringExact10_00(): void
+    public function testValidStringExact1000(): void
     {
         $money = Money::fromString('10.00');
         self::assertSame('10.00', $money->getAmount());
@@ -28,14 +37,14 @@ final class MoneyTest extends TestCase
         self::assertSame(1000, $tv->getCents());
     }
 
-    public function testValidString100_00(): void
+    public function testValidString10000(): void
     {
         $tv = TransferValue::fromString('100.00');
         self::assertSame('100.00', $tv->getAmount());
         self::assertSame(10000, $tv->getCents());
     }
 
-    public function testRejectNumber10_0(): void
+    public function testRejectNumber100(): void
     {
         $this->expectException(TransferValidationException::class);
         TransferValue::fromMixed(10.0);
@@ -59,7 +68,7 @@ final class MoneyTest extends TestCase
         TransferValue::fromMixed('0.00');
     }
 
-    public function testRejectDoubleZero00_00(): void
+    public function testRejectDoubleZero0000(): void
     {
         $this->expectException(TransferValidationException::class);
         TransferValue::fromString('00.00');
@@ -83,7 +92,7 @@ final class MoneyTest extends TestCase
         TransferValue::fromString('10.001');
     }
 
-    public function testRejectMoreThan2Decimals100_000(): void
+    public function testRejectMoreThan2Decimals100000(): void
     {
         $this->expectException(TransferValidationException::class);
         TransferValue::fromString('10.000');

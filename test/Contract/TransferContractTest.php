@@ -1,23 +1,34 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace HyperfTest\Contract;
 
-use App\Domain\Shared\Exception\DomainException;
+use App\Domain\Shared\Exception\NotFoundException;
 use App\Domain\Shared\ValueObject\Money;
 use App\Domain\Transfer\Entity\Transfer;
 use App\Domain\Transfer\Entity\TransferStatus;
 use App\Domain\Transfer\Exception\SelfTransferException;
 use App\Domain\Transfer\Exception\TransferValidationException;
-use App\Domain\User\Entity\UserType;
+use App\Domain\Transfer\ValueObject\TransferValue;
 use App\Domain\Wallet\Exception\InsufficientBalanceException;
+use App\Infrastructure\Cache\RedisIdempotencyStore;
 use PHPUnit\Framework\TestCase;
 
 /**
  * T035 Contract test POST /transfer valid
  * (200/201 completed/queued, 422 saldo, 404 missing, 422 self-transfer)
- * Domain-level contract validation without HTTP server; mirrors transfer.yaml
+ * Domain-level contract validation without HTTP server; mirrors transfer.yaml.
+ * @internal
+ * @coversNothing
  */
 final class TransferContractTest extends TestCase
 {
@@ -55,7 +66,7 @@ final class TransferContractTest extends TestCase
             $m = Money::fromString($v);
             self::assertSame($v, $m->getAmount());
             // Also via TransferValue
-            $tv = \App\Domain\Transfer\ValueObject\TransferValue::fromString($v);
+            $tv = TransferValue::fromString($v);
             self::assertSame($v, $tv->getAmount());
         }
     }
@@ -63,7 +74,7 @@ final class TransferContractTest extends TestCase
     public function testContractTransferValuePatternInvalidZero(): void
     {
         $this->expectException(TransferValidationException::class);
-        \App\Domain\Transfer\ValueObject\TransferValue::fromString('0.00');
+        TransferValue::fromString('0.00');
     }
 
     public function testContractTransferSelfTransfer422(): void
@@ -99,39 +110,39 @@ final class TransferContractTest extends TestCase
 
     public function testContractPayerNotFound404(): void
     {
-        $ex = new \App\Domain\Shared\Exception\NotFoundException('Payer não encontrado', 'payer_not_found');
+        $ex = new NotFoundException('Payer não encontrado', 'payer_not_found');
         self::assertSame(404, $ex->getHttpStatus());
         self::assertSame('payer_not_found', $ex->getBusinessCode());
     }
 
     public function testContractPayeeNotFound404(): void
     {
-        $ex = new \App\Domain\Shared\Exception\NotFoundException('Payee não encontrado', 'payee_not_found');
+        $ex = new NotFoundException('Payee não encontrado', 'payee_not_found');
         self::assertSame(404, $ex->getHttpStatus());
     }
 
     public function testContractValueNumberRejected422(): void
     {
         $this->expectException(TransferValidationException::class);
-        \App\Domain\Transfer\ValueObject\TransferValue::fromMixed(100.0);
+        TransferValue::fromMixed(100.0);
     }
 
     public function testContractValueNumberIntRejected422(): void
     {
         $this->expectException(TransferValidationException::class);
-        \App\Domain\Transfer\ValueObject\TransferValue::fromMixed(10);
+        TransferValue::fromMixed(10);
     }
 
     public function testContractNegativeValueRejected422(): void
     {
         $this->expectException(TransferValidationException::class);
-        \App\Domain\Transfer\ValueObject\TransferValue::fromString('-10.00');
+        TransferValue::fromString('-10.00');
     }
 
     public function testContractMoreThan2DecimalsRejected422(): void
     {
         $this->expectException(TransferValidationException::class);
-        \App\Domain\Transfer\ValueObject\TransferValue::fromString('10.001');
+        TransferValue::fromString('10.001');
     }
 
     public function testContractMissingFields422(): void
@@ -143,9 +154,9 @@ final class TransferContractTest extends TestCase
 
     public function testContractIdempotencyFingerprintDeterministic(): void
     {
-        $fp1 = \App\Infrastructure\Cache\RedisIdempotencyStore::fingerprint(1, 2, '10.00');
-        $fp2 = \App\Infrastructure\Cache\RedisIdempotencyStore::fingerprint(1, 2, '10.00');
-        $fp3 = \App\Infrastructure\Cache\RedisIdempotencyStore::fingerprint(1, 2, '20.00');
+        $fp1 = RedisIdempotencyStore::fingerprint(1, 2, '10.00');
+        $fp2 = RedisIdempotencyStore::fingerprint(1, 2, '10.00');
+        $fp3 = RedisIdempotencyStore::fingerprint(1, 2, '20.00');
         self::assertSame($fp1, $fp2);
         self::assertNotSame($fp1, $fp3);
         self::assertSame(64, strlen($fp1)); // sha256 hex

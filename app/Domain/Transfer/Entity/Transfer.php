@@ -1,6 +1,14 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace App\Domain\Transfer\Entity;
 
@@ -10,6 +18,12 @@ use App\Domain\Transfer\Exception\SelfTransferException;
 use App\Domain\Transfer\Exception\TransferValidationException;
 use App\Domain\User\Entity\UserType;
 
+/**
+ * Transfer — FR-006 / FR-007 per spec.md (T047)
+ * - FR-006: common→common e common→merchant permitidos; payee pode ser common OU merchant (sem restrição).
+ * - FR-007: merchant payer bloqueado → payerType === MERCHANT lança MerchantPayerNotAllowedException 403 merchant_payer_blocked.
+ * Payee type é intencionalmente NÃO validado para permitir lojista como recebedor (US2).
+ */
 final class Transfer
 {
     public function __construct(
@@ -33,17 +47,21 @@ final class Transfer
             throw new SelfTransferException();
         }
 
-        if (!$this->value->isPositive()) {
+        if (! $this->value->isPositive()) {
             throw new TransferValidationException('value deve ser positivo > 0.00');
         }
 
+        // FR-007: payer merchant bloqueado (403 merchant_payer_blocked)
+        // FR-006: payee merchant explicitamente permitido — nenhuma checagem de payee type
         if ($this->payerType !== null && $this->payerType === UserType::MERCHANT) {
             throw new MerchantPayerNotAllowedException();
         }
     }
 
     /**
-     * Factory that validates payer type for US1 common→common rule.
+     * Factory that validates payer type for common→common / common→merchant rules.
+     * - FR-006: payee merchant permitido (não valida payee type)
+     * - FR-007: payer merchant bloqueado via constructor guard
      * Used by tests T033 and UseCase.
      */
     public static function createForCommonPayer(Money $value, int $payerId, UserType $payerType, int $payeeId, TransferStatus $status = TransferStatus::COMPLETED): self

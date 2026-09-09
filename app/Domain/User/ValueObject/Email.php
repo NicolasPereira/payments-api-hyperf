@@ -1,6 +1,14 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace App\Domain\User\ValueObject;
 
@@ -28,6 +36,11 @@ final class Email
         $this->value = $normalized;
     }
 
+    public function __toString(): string
+    {
+        return $this->value;
+    }
+
     public static function normalize(string $raw): string
     {
         return strtolower(trim($raw));
@@ -41,10 +54,5 @@ final class Email
     public function equals(self $other): bool
     {
         return $this->value === $other->value;
-    }
-
-    public function __toString(): string
-    {
-        return $this->value;
     }
 }

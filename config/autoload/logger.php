@@ -35,7 +35,7 @@ return [
                 ],
             ],
             'processors' => [
-                TraceContextProcessor::class,
+                ['class' => TraceContextProcessor::class],
             ],
         ],
         // Structured JSON logs with trace context per Constitution VI
@@ -55,7 +55,7 @@ return [
                 ],
             ],
             'processors' => [
-                TraceContextProcessor::class,
+                ['class' => TraceContextProcessor::class],
             ],
         ],
         'stderr' => [
@@ -74,7 +74,7 @@ return [
                 ],
             ],
             'processors' => [
-                TraceContextProcessor::class,
+                ['class' => TraceContextProcessor::class],
             ],
         ],
     ],

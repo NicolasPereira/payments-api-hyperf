@@ -1,6 +1,14 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace App\Domain\User\ValueObject;
 
@@ -21,7 +29,7 @@ final class DocumentMerchant implements Document
     {
         $normalized = self::normalize($raw);
 
-        if (!preg_match('/^[A-Z0-9]{12}[0-9]{2}$/', $normalized)) {
+        if (! preg_match('/^[A-Z0-9]{12}[0-9]{2}$/', $normalized)) {
             throw new InvalidDocumentException('Documento inválido — formato CNPJ deve conter 14 posições ^[A-Z0-9]{12}[0-9]{2}$');
         }
 
@@ -35,18 +43,37 @@ final class DocumentMerchant implements Document
             throw new InvalidDocumentException('Documento inválido — CNPJ com sequência repetida');
         }
 
-        if (!self::hasValidCheckDigits($normalized)) {
+        if (! self::hasValidCheckDigits($normalized)) {
             throw new InvalidDocumentException('Documento inválido — dígitos verificadores CNPJ inválidos');
         }
 
         $this->value = $normalized;
     }
 
+    public function __toString(): string
+    {
+        return $this->value;
+    }
+
     public static function normalize(string $raw): string
     {
         $stripped = preg_replace('/[\.\-\/\s]/', '', $raw);
-        $upper = strtoupper($stripped ?? '');
-        return $upper;
+        return strtoupper($stripped ?? '');
+    }
+
+    public function getValue(): string
+    {
+        return $this->value;
+    }
+
+    public function getType(): DocumentType
+    {
+        return DocumentType::CNPJ;
+    }
+
+    public function equals(Document $other): bool
+    {
+        return $other instanceof self && $this->value === $other->getValue();
     }
 
     private static function isAllEqual(string $value): bool
@@ -91,25 +118,5 @@ final class DocumentMerchant implements Document
         $rest = $sum % 11;
 
         return $rest < 2 ? 0 : 11 - $rest;
-    }
-
-    public function getValue(): string
-    {
-        return $this->value;
-    }
-
-    public function getType(): DocumentType
-    {
-        return DocumentType::CNPJ;
-    }
-
-    public function equals(Document $other): bool
-    {
-        return $other instanceof self && $this->value === $other->getValue();
-    }
-
-    public function __toString(): string
-    {
-        return $this->value;
     }
 }

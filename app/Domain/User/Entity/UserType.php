@@ -1,19 +1,29 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace App\Domain\User\Entity;
+
+use App\Domain\User\ValueObject\DocumentType;
 
 enum UserType: string
 {
     case COMMON = 'common';
     case MERCHANT = 'merchant';
 
-    public function getDocumentType(): \App\Domain\User\ValueObject\DocumentType
+    public function getDocumentType(): DocumentType
     {
         return match ($this) {
-            self::COMMON => \App\Domain\User\ValueObject\DocumentType::CPF,
-            self::MERCHANT => \App\Domain\User\ValueObject\DocumentType::CNPJ,
+            self::COMMON => DocumentType::CPF,
+            self::MERCHANT => DocumentType::CNPJ,
         };
     }
 }

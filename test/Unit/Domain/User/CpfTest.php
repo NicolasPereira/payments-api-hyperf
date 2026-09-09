@@ -1,6 +1,14 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace HyperfTest\Unit\Domain\User;
 
@@ -10,7 +18,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * T016 Unit test CPF normalização/validação
- * spec: 529.982.247-25 valid, 11111111111 rejected, DV invalid, format invalid
+ * spec: 529.982.247-25 valid, 11111111111 rejected, DV invalid, format invalid.
+ * @internal
+ * @coversNothing
  */
 final class CpfTest extends TestCase
 {

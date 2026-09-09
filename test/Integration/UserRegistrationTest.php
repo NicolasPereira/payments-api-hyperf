@@ -1,6 +1,14 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace HyperfTest\Integration;
 
@@ -8,21 +16,26 @@ use App\Application\User\CreateUserUseCase;
 use App\Domain\Shared\ValueObject\Money;
 use App\Domain\User\Exception\DuplicateDocumentException;
 use App\Domain\User\Exception\InvalidDocumentException;
+use App\Infrastructure\Persistence\Database;
 use App\Infrastructure\Persistence\UserRepository;
 use App\Infrastructure\Persistence\WalletRepository;
-use App\Infrastructure\Persistence\Database;
 use Hyperf\DbConnection\Db;
 use PHPUnit\Framework\TestCase;
+use Throwable;
 
 /**
  * T031 Integration test atomicidade User+Wallet
  * Tests: rollback em DV inválido, constraint única, User+Wallet atomic creation
  * Requires MySQL via Database::transaction. If DB not available, tests are skipped.
+ * @internal
+ * @coversNothing
  */
 final class UserRegistrationTest extends TestCase
 {
     private UserRepository $users;
+
     private WalletRepository $wallets;
+
     private CreateUserUseCase $useCase;
 
     protected function setUp(): void
@@ -33,37 +46,9 @@ final class UserRegistrationTest extends TestCase
         $this->useCase = new CreateUserUseCase($this->users, $this->wallets);
     }
 
-    private function isDbAvailable(): bool
-    {
-        try {
-            Db::select('SELECT 1');
-            return true;
-        } catch (\Throwable) {
-            return false;
-        }
-    }
-
-    private function cleanTestArtifacts(string $document, string $email): void
-    {
-        try {
-            $user = $this->users->findByDocument($document);
-            if ($user !== null && $user->getId() !== null) {
-                Db::table('wallets')->where('user_id', $user->getId())->delete();
-                Db::table('users')->where('id', $user->getId())->delete();
-            }
-            $userByEmail = $this->users->findByEmail($email);
-            if ($userByEmail !== null && $userByEmail->getId() !== null) {
-                Db::table('wallets')->where('user_id', $userByEmail->getId())->delete();
-                Db::table('users')->where('id', $userByEmail->getId())->delete();
-            }
-        } catch (\Throwable) {
-            // ignore cleanup errors
-        }
-    }
-
     public function testCreateCommonUserCreatesWalletZero(): void
     {
-        if (!$this->isDbAvailable()) {
+        if (! $this->isDbAvailable()) {
             self::markTestSkipped('DB not available for integration test');
         }
 
@@ -94,7 +79,7 @@ final class UserRegistrationTest extends TestCase
 
     public function testCreateMerchantAlfaCreatesWalletZero(): void
     {
-        if (!$this->isDbAvailable()) {
+        if (! $this->isDbAvailable()) {
             self::markTestSkipped('DB not available for integration test');
         }
 
@@ -119,7 +104,7 @@ final class UserRegistrationTest extends TestCase
 
     public function testInvalidDocumentDoesNotPersistUserOrWallet(): void
     {
-        if (!$this->isDbAvailable()) {
+        if (! $this->isDbAvailable()) {
             // Pure domain check still validates without DB: ensure no persistence would happen
             $this->expectException(InvalidDocumentException::class);
             $this->useCase->execute([
@@ -160,7 +145,7 @@ final class UserRegistrationTest extends TestCase
 
     public function testDuplicateDocumentIsRejectedWith409(): void
     {
-        if (!$this->isDbAvailable()) {
+        if (! $this->isDbAvailable()) {
             self::markTestSkipped('DB not available for integration test');
         }
 
@@ -198,7 +183,7 @@ final class UserRegistrationTest extends TestCase
 
     public function testDuplicateEmailCaseInsensitiveIsRejected(): void
     {
-        if (!$this->isDbAvailable()) {
+        if (! $this->isDbAvailable()) {
             self::markTestSkipped('DB not available for integration test');
         }
 
@@ -238,7 +223,7 @@ final class UserRegistrationTest extends TestCase
 
     public function testAtomicityCnpjAlfaDuplicateCaseInsensitive(): void
     {
-        if (!$this->isDbAvailable()) {
+        if (! $this->isDbAvailable()) {
             self::markTestSkipped('DB not available for integration test');
         }
 
@@ -276,7 +261,7 @@ final class UserRegistrationTest extends TestCase
 
     public function testWalletBalanceNeverNegativeAndStartsZero(): void
     {
-        if (!$this->isDbAvailable()) {
+        if (! $this->isDbAvailable()) {
             self::markTestSkipped('DB not available for integration test');
         }
 
@@ -296,5 +281,33 @@ final class UserRegistrationTest extends TestCase
         self::assertFalse($result['wallet']->getBalance()->lessThan(Money::zero()));
 
         $this->cleanTestArtifacts($doc, $email);
+    }
+
+    private function isDbAvailable(): bool
+    {
+        try {
+            Db::select('SELECT 1');
+            return true;
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    private function cleanTestArtifacts(string $document, string $email): void
+    {
+        try {
+            $user = $this->users->findByDocument($document);
+            if ($user !== null && $user->getId() !== null) {
+                Db::table('wallets')->where('user_id', $user->getId())->delete();
+                Db::table('users')->where('id', $user->getId())->delete();
+            }
+            $userByEmail = $this->users->findByEmail($email);
+            if ($userByEmail !== null && $userByEmail->getId() !== null) {
+                Db::table('wallets')->where('user_id', $userByEmail->getId())->delete();
+                Db::table('users')->where('id', $userByEmail->getId())->delete();
+            }
+        } catch (Throwable) {
+            // ignore cleanup errors
+        }
     }
 }

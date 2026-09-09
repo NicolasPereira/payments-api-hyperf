@@ -1,6 +1,14 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace App\Domain\Transfer\ValueObject;
 
@@ -28,6 +36,11 @@ final class TransferValue
         $this->amount = $amount;
         $this->cents = $cents;
         $this->money = $money;
+    }
+
+    public function __toString(): string
+    {
+        return $this->amount;
     }
 
     /**
@@ -58,14 +71,13 @@ final class TransferValue
     }
 
     /**
-     * Accepts mixed value to enforce string type (rejects number 10.0, int, etc.)
+     * Accepts mixed value to enforce string type (rejects number 10.0, int, etc.).
      *
-     * @param mixed $value
      * @throws TransferValidationException
      */
     public static function fromMixed(mixed $value): self
     {
-        if (!is_string($value)) {
+        if (! is_string($value)) {
             throw new TransferValidationException(
                 sprintf('Value must be string decimal ex: "10.00", got %s', get_debug_type($value))
             );
@@ -76,7 +88,7 @@ final class TransferValue
 
     public static function fromMoney(Money $money): self
     {
-        if (!$money->isPositive()) {
+        if (! $money->isPositive()) {
             throw new TransferValidationException('Value must be positive');
         }
 
@@ -101,11 +113,6 @@ final class TransferValue
     public function toMoney(): Money
     {
         return $this->money;
-    }
-
-    public function __toString(): string
-    {
-        return $this->amount;
     }
 
     public function equals(self $other): bool

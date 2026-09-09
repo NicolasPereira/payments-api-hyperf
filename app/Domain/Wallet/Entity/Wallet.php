@@ -1,10 +1,19 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace App\Domain\Wallet\Entity;
 
 use App\Domain\Shared\ValueObject\Money;
+use InvalidArgumentException;
 
 final class Wallet
 {
@@ -16,7 +25,7 @@ final class Wallet
         private readonly ?string $updatedAt = null,
     ) {
         if ($this->userId <= 0) {
-            throw new \InvalidArgumentException('user_id deve ser positivo');
+            throw new InvalidArgumentException('user_id deve ser positivo');
         }
     }
 

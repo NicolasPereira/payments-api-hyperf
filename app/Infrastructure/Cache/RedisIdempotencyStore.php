@@ -1,6 +1,14 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace App\Infrastructure\Cache;
 
@@ -12,7 +20,7 @@ use Redis;
  * Idempotency store using Redis SET NX EX 180 atomic per research Decision 3.
  * Key = hash(payer+payee+value) with TTL 180s. Value = transfer result JSON.
  */
-final class RedisIdempotencyStore
+class RedisIdempotencyStore
 {
     private const TTL_SECONDS = 180;
 
@@ -38,10 +46,12 @@ final class RedisIdempotencyStore
 
         if ($result) {
             $this->logger->debug('idempotency reserved', ['key' => $key, 'ttl' => $ttl]);
+            $this->logger->debug('metrics idempotency_miss_total increment', ['key' => $key]);
             return true;
         }
 
         $this->logger->info('idempotency hit', ['key' => $key]);
+        $this->logger->debug('metrics idempotency_hit_total increment', ['key' => $key]);
 
         return false;
     }
@@ -57,8 +67,12 @@ final class RedisIdempotencyStore
 
         if ($value === false || $value === null) {
             $this->logger->debug('idempotency miss', ['key' => $key]);
+            $this->logger->debug('metrics idempotency_miss_total increment', ['key' => $key]);
             return null;
         }
+
+        $this->logger->debug('idempotency hit cached get', ['key' => $key]);
+        $this->logger->debug('metrics idempotency_hit_total increment', ['key' => $key]);
 
         return (string) $value;
     }
@@ -76,7 +90,7 @@ final class RedisIdempotencyStore
     }
 
     /**
-     * Generate fingerprint hash per spec: hash(payer+payee+value)
+     * Generate fingerprint hash per spec: hash(payer+payee+value).
      */
     public static function fingerprint(int $payerId, int $payeeId, string $value): string
     {
@@ -101,10 +115,8 @@ final class RedisIdempotencyStore
         $redis->del(self::PREFIX . $fingerprint);
     }
 
-    private function getRedis(): Redis
+    private function getRedis(): mixed
     {
-        /** @var Redis $redis */
-        $redis = $this->redisFactory->get('default');
-        return $redis;
+        return $this->redisFactory->get('default');
     }
 }

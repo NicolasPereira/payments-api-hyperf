@@ -1,6 +1,14 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace App\Infrastructure\Persistence;
 
@@ -44,17 +52,20 @@ final class Database
         $ordered = array_values(array_unique($userIds));
         sort($ordered, SORT_NUMERIC);
 
-        return Db::table('wallets')
+        $rows = Db::table('wallets')
             ->whereIn('user_id', $ordered)
             ->orderBy('user_id', 'asc')
             ->lockForUpdate()
             ->get();
+
+        // Ensure deterministic asc order in PHP as fallback (DB order may be unstable without FOR UPDATE transaction context)
+        return $rows->sortBy(fn ($row) => (int) $row->user_id)->values();
     }
 
     /**
      * Lock a single wallet for update.
      *
-     * @return object|null row
+     * @return null|object row
      */
     public static function lockWalletForUpdate(int $userId): ?object
     {

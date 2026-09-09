@@ -29,7 +29,26 @@
 - [x] Feature meets measurable outcomes defined in Success Criteria — SC-002/SC-003/SC-004 cobrem validação de documento
 - [x] No implementation details leak into specification — sem biblioteca, classe, ORM ou algoritmo específico
 
+## Implementation Status (2026-09-09 — Phase 7 Polish T058-T065)
+
+- [x] T006-T015 Foundational (migrations, Money, Domain Exceptions, ExceptionMapper, Database locks, RedisIdempotency, Ports, routes, OTEL, Authorizer/Notifier adapters)
+- [x] T016-T031 US3 Cadastro (CPF/CNPJ alfa IN 2.229/2024, Email, User/Wallet, CreateUserUseCase, UserController, atomicidade)
+- [x] T032-T043 US1 Transfer common→common (Money/Transfer invariants, TransferValue, ExecuteTransferUseCase com Authorizer, Transaction + Outbox, TransferController, Idempotency 3min)
+- [x] T044-T048 US2 common→merchant (merchant payer 403 merchant_payer_blocked + metrics, payee merchant permitido)
+- [x] T049-T057 US4 Resiliência (authorizer 403/502/503 sem mutação, notifier Outbox pending→sent/failed ≤3 retries, worker lease, OTEL correlation)
+- [x] T058 Quickstart validação completa Docker http://localhost:9501 (scripts/quickstart-validate.sh cobre CPF/CNPJ alfa, transferências, idempotency, resiliência)
+- [x] T059 Seed saldos database/seeders/TestBalanceSeeder.php (sem /deposit per Clarification 2026-08-30)
+- [x] T060 EdgeCasesTest unit adicionais (value zero/negativo/number, payer==payee, documento lowercase com espaços, email case-insensitive)
+- [x] T061 Performance smoke 100 transfers/min SC-013 (test/Integration/PerformanceTest.php — p95 <3s, erro <1%, throughput validado)
+- [x] T062 Security hardening app/Controller/ (rate limiting 60/100 req/min via Redis, replay protection correlation_id 60s, boundaries, no PII/secrets em logs sanitizados)
+- [x] T063 Quality gates (composer test, composer analyse, php-cs-fixer dry-run — violações corrigidas)
+- [x] T064 README + requirements atualizados
+- [x] T065 Idempotência hash 3min documentada em quickstart.md + telemetry hits/misses per research Decision 3
+
+**SC coverage**: SC-001..SC-013 validados via tests/contract/integration + quickstart script. SC-005 p95 <3s, SC-013 100/min <1% erro via PerformanceTest. Idempotência MVP limitação documentada e monitorada.
+
 ## Notes
 
 - Revisão incorporada em 2026-08-30: adicionadas regras CPF válido para common, CNPJ válido para merchant, validação oficial brasileira (formato, normalização, dígitos verificadores), normalização antes de validação/persistência, rejeição 422 antes de persistência, validação como regra de domínio sem infra/DB/HTTP, unicidade mantida sobre forma normalizada.
 - All items pass. Spec ready for `/speckit.plan`.
+- Polish 2026-09-09: Feature completa, pronta para PR; T058-T065 marcados [x] em tasks.md (não commitado per instruções).

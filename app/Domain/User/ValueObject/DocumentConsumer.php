@@ -1,6 +1,14 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace App\Domain\User\ValueObject;
 
@@ -20,7 +28,7 @@ final class DocumentConsumer implements Document
     {
         $normalized = self::normalize($raw);
 
-        if (!preg_match('/^[0-9]{11}$/', $normalized)) {
+        if (! preg_match('/^[0-9]{11}$/', $normalized)) {
             throw new InvalidDocumentException('Documento inválido — formato CPF deve conter 11 dígitos');
         }
 
@@ -28,11 +36,16 @@ final class DocumentConsumer implements Document
             throw new InvalidDocumentException('Documento inválido — CPF com todos dígitos iguais');
         }
 
-        if (!self::hasValidCheckDigits($normalized)) {
+        if (! self::hasValidCheckDigits($normalized)) {
             throw new InvalidDocumentException('Documento inválido — dígitos verificadores CPF inválidos');
         }
 
         $this->value = $normalized;
+    }
+
+    public function __toString(): string
+    {
+        return $this->value;
     }
 
     public static function normalize(string $raw): string
@@ -40,6 +53,21 @@ final class DocumentConsumer implements Document
         // strip . - / and spaces (including "\t", "\n"), keep only digits then validate
         $stripped = preg_replace('/[\.\-\/\s]/', '', $raw);
         return $stripped ?? '';
+    }
+
+    public function getValue(): string
+    {
+        return $this->value;
+    }
+
+    public function getType(): DocumentType
+    {
+        return DocumentType::CPF;
+    }
+
+    public function equals(Document $other): bool
+    {
+        return $other instanceof self && $this->value === $other->getValue();
     }
 
     private static function isAllEqual(string $value): bool
@@ -67,25 +95,5 @@ final class DocumentConsumer implements Document
         $rest = $sum % 11;
 
         return $rest < 2 ? 0 : 11 - $rest;
-    }
-
-    public function getValue(): string
-    {
-        return $this->value;
-    }
-
-    public function getType(): DocumentType
-    {
-        return DocumentType::CPF;
-    }
-
-    public function equals(Document $other): bool
-    {
-        return $other instanceof self && $this->value === $other->getValue();
-    }
-
-    public function __toString(): string
-    {
-        return $this->value;
     }
 }

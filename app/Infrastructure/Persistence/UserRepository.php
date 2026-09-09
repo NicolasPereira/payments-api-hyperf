@@ -1,6 +1,14 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace App\Infrastructure\Persistence;
 
@@ -10,7 +18,7 @@ use App\Domain\User\ValueObject\DocumentFactory;
 use App\Domain\User\ValueObject\Email;
 use Hyperf\DbConnection\Db;
 
-final class UserRepository
+class UserRepository
 {
     public function findById(int $id): ?User
     {
@@ -73,10 +81,8 @@ final class UserRepository
 
     /**
      * Hydrate DB row into domain User.
-     *
-     * @param object|array $row
      */
-    private function hydrate(object|array $row): User
+    private function hydrate(array|object $row): User
     {
         $r = is_array($row) ? (object) $row : $row;
 

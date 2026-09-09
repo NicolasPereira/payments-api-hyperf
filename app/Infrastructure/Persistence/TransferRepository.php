@@ -1,6 +1,14 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace App\Infrastructure\Persistence;
 
@@ -9,7 +17,7 @@ use App\Domain\Transfer\Entity\Transfer;
 use App\Domain\Transfer\Entity\TransferStatus;
 use Hyperf\DbConnection\Db;
 
-final class TransferRepository
+class TransferRepository
 {
     public function findById(int $id): ?Transfer
     {
@@ -22,7 +30,7 @@ final class TransferRepository
     }
 
     /**
-     * @return Transfer[]|array<int,Transfer>
+     * @return array<int,Transfer>|Transfer[]
      */
     public function findByPayerId(int $payerId): array
     {
@@ -63,10 +71,7 @@ final class TransferRepository
         return (int) Db::table('transfers')->insertGetId($data);
     }
 
-    /**
-     * @param object|array $row
-     */
-    private function hydrate(object|array $row): Transfer
+    private function hydrate(array|object $row): Transfer
     {
         $r = is_array($row) ? (object) $row : $row;
 

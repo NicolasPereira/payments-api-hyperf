@@ -1,6 +1,14 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace HyperfTest\Integration;
 
@@ -8,6 +16,7 @@ use App\Application\Transfer\ExecuteTransferUseCase;
 use App\Application\User\CreateUserUseCase;
 use App\Domain\Contracts\AuthorizerPort;
 use App\Domain\Contracts\AuthorizerResult;
+use App\Domain\User\Entity\User;
 use App\Infrastructure\Cache\RedisIdempotencyStore;
 use App\Infrastructure\Persistence\NotificationOutboxRepository;
 use App\Infrastructure\Persistence\TransferRepository;
@@ -17,17 +26,24 @@ use Hyperf\DbConnection\Db;
 use Hyperf\Redis\RedisFactory;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use Throwable;
 
 /**
  * T043 Integration test idempotency Redis
- * (2× mesmo payer+payee+value em 3min → mesmo resultado sem duplo débito, TTL 180s)
+ * (2× mesmo payer+payee+value em 3min → mesmo resultado sem duplo débito, TTL 180s).
+ * @internal
+ * @coversNothing
  */
 final class IdempotencyTest extends TestCase
 {
     private UserRepository $users;
+
     private WalletRepository $wallets;
+
     private TransferRepository $transfers;
+
     private NotificationOutboxRepository $outbox;
+
     private CreateUserUseCase $createUser;
 
     protected function setUp(): void
@@ -40,60 +56,9 @@ final class IdempotencyTest extends TestCase
         $this->createUser = new CreateUserUseCase($this->users, $this->wallets);
     }
 
-    private function isDbAvailable(): bool
-    {
-        try {
-            Db::select('SELECT 1');
-            return true;
-        } catch (\Throwable) {
-            return false;
-        }
-    }
-
-    private function isRedisAvailable(): ?RedisIdempotencyStore
-    {
-        try {
-            $factory = \Hyperf\Support\make(RedisFactory::class);
-            $store = new RedisIdempotencyStore($factory, new NullLogger());
-            $factory->get('default')->ping();
-            return $store;
-        } catch (\Throwable) {
-            return null;
-        }
-    }
-
-    private function createCommonUser(string $document, string $email): \App\Domain\User\Entity\User
-    {
-        $result = $this->createUser->execute([
-            'full_name' => 'Idemp User ' . uniqid(),
-            'document' => $document,
-            'email' => $email,
-            'password' => 'password123',
-            'type' => 'common',
-        ]);
-
-        return $result['user'];
-    }
-
-    private function setWalletBalance(int $userId, string $amount): void
-    {
-        Db::table('wallets')->where('user_id', $userId)->update(['balance' => $amount, 'updated_at' => date('Y-m-d H:i:s')]);
-    }
-
-    private function cleanUser(int $userId): void
-    {
-        try {
-            Db::table('notification_outbox')->where('payee_id', $userId)->delete();
-            Db::table('transfers')->where('payer_id', $userId)->orWhere('payee_id', $userId)->delete();
-            Db::table('wallets')->where('user_id', $userId)->delete();
-            Db::table('users')->where('id', $userId)->delete();
-        } catch (\Throwable) {
-        }
-    }
-
     public function testIdempotentSamePayerPayeeValueReturnsSameResultNoDoubleDebit(): void
     {
-        if (!$this->isDbAvailable()) {
+        if (! $this->isDbAvailable()) {
             self::markTestSkipped('DB not available');
         }
 
@@ -181,7 +146,7 @@ final class IdempotencyTest extends TestCase
     public function testIdempotencyMockWithoutRedisStillPreventsDoubleDebit(): void
     {
         // Unit-style fallback: with mocked Redis that returns cached result, UseCase should not double debit
-        if (!$this->isDbAvailable()) {
+        if (! $this->isDbAvailable()) {
             self::markTestSkipped('DB not available');
         }
 
@@ -236,5 +201,73 @@ final class IdempotencyTest extends TestCase
 
         $this->cleanUser($payerId);
         $this->cleanUser($payeeId);
+    }
+
+    private function isDbAvailable(): bool
+    {
+        try {
+            Db::select('SELECT 1');
+            return true;
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    private function isRedisAvailable(): ?RedisIdempotencyStore
+    {
+        try {
+            $factory = \Hyperf\Support\make(RedisFactory::class);
+            $store = new RedisIdempotencyStore($factory, new NullLogger());
+            $factory->get('default')->ping();
+            return $store;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private function createCommonUser(string $document, string $email): User
+    {
+        // cleanup duplicate document/email leftover per T062 quality gate
+        try {
+            if (isset($document)) {
+                $norm = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $document));
+                Db::statement('SET FOREIGN_KEY_CHECKS=0');
+                Db::table('wallets')->whereIn('user_id', Db::table('users')->where('document', $norm)->pluck('id')->toArray())->delete();
+                Db::table('users')->where('document', $norm)->delete();
+                Db::statement('SET FOREIGN_KEY_CHECKS=1');
+            } if (isset($email)) {
+                Db::table('users')->where('email', $email)->delete();
+            }
+        } catch (Throwable) {
+            try {
+                Db::statement('SET FOREIGN_KEY_CHECKS=1');
+            } catch (Throwable) {
+            }
+        }
+        $result = $this->createUser->execute([
+            'full_name' => 'Idemp User ' . uniqid(),
+            'document' => $document,
+            'email' => $email,
+            'password' => 'password123',
+            'type' => 'common',
+        ]);
+
+        return $result['user'];
+    }
+
+    private function setWalletBalance(int $userId, string $amount): void
+    {
+        Db::table('wallets')->where('user_id', $userId)->update(['balance' => $amount, 'updated_at' => date('Y-m-d H:i:s')]);
+    }
+
+    private function cleanUser(int $userId): void
+    {
+        try {
+            Db::table('notification_outbox')->where('payee_id', $userId)->delete();
+            Db::table('transfers')->where('payer_id', $userId)->orWhere('payee_id', $userId)->delete();
+            Db::table('wallets')->where('user_id', $userId)->delete();
+            Db::table('users')->where('id', $userId)->delete();
+        } catch (Throwable) {
+        }
     }
 }

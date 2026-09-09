@@ -1,6 +1,14 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace HyperfTest\Unit\Domain\User;
 
@@ -10,7 +18,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * T020 Unit test Email normalização
- * case-insensitive A@b.com ≡ a@b.com, unicidade via normalize, formato
+ * case-insensitive A@b.com ≡ a@b.com, unicidade via normalize, formato.
+ * @internal
+ * @coversNothing
  */
 final class EmailTest extends TestCase
 {

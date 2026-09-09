@@ -1,11 +1,21 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace App\Infrastructure\Http;
 
 use App\Domain\Shared\Exception\DomainException;
+use Hyperf\Context\Context;
 use Hyperf\Contract\StdoutLoggerInterface;
+use Hyperf\HttpMessage\Stream\SwooleStream;
 use Psr\Http\Message\ResponseInterface;
 use Throwable;
 
@@ -67,7 +77,7 @@ final class ExceptionMapper
             ->withStatus($status)
             ->withHeader('Content-Type', 'application/json')
             ->withHeader('X-Correlation-Id', $body->correlationId ?? $correlationId ?? '')
-            ->withBody(new \Hyperf\HttpMessage\Stream\SwooleStream($payload !== false ? $payload : '{}'));
+            ->withBody(new SwooleStream($payload !== false ? $payload : '{}'));
     }
 
     private function recordMetrics(string $businessCode, Throwable $throwable): void
@@ -97,7 +107,7 @@ final class ExceptionMapper
     {
         // Try to get from coroutine context if middleware already set it.
         try {
-            $ctx = \Hyperf\Context\Context::get('correlation_id');
+            $ctx = Context::get('correlation_id');
             if (is_string($ctx) && $ctx !== '') {
                 return $ctx;
             }

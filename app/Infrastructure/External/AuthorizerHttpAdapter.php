@@ -1,15 +1,24 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace App\Infrastructure\External;
 
 use App\Domain\Contracts\AuthorizerPort;
 use App\Domain\Contracts\AuthorizerRequest;
 use App\Domain\Contracts\AuthorizerResult;
+use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\RequestOptions;
-use Hyperf\Guzzle\ClientFactory;
 use Hyperf\Context\Context;
+use Hyperf\Guzzle\ClientFactory;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -89,7 +98,7 @@ final class AuthorizerHttpAdapter implements AuthorizerPort
             return AuthorizerResult::denied($body, 'Authorizer denied authorization');
         } catch (Throwable $e) {
             $message = $e->getMessage();
-            $isTimeout = str_contains(strtolower($message), 'timeout') || str_contains(strtolower($message), 'timed out') || $e::class === \GuzzleHttp\Exception\ConnectException::class;
+            $isTimeout = str_contains(strtolower($message), 'timeout') || str_contains(strtolower($message), 'timed out') || $e::class === ConnectException::class;
 
             $this->logger->warning('authorizer exception', [
                 'exception.type' => $e::class,

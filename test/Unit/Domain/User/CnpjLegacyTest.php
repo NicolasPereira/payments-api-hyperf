@@ -1,6 +1,14 @@
 <?php
 
 declare(strict_types=1);
+/**
+ * This file is part of Hyperf.
+ *
+ * @link     https://www.hyperf.io
+ * @document https://hyperf.wiki
+ * @contact  group@hyperf.io
+ * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
+ */
 
 namespace HyperfTest\Unit\Domain\User;
 
@@ -10,7 +18,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * T017 Unit test CNPJ legado numérico
- * 11.222.333/0001-81 => 11222333000181, uppercase normalization, DV module 11
+ * 11.222.333/0001-81 => 11222333000181, uppercase normalization, DV module 11.
+ * @internal
+ * @coversNothing
  */
 final class CnpjLegacyTest extends TestCase
 {
