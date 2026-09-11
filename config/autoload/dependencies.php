@@ -10,8 +10,10 @@ declare(strict_types=1);
  * @license  https://github.com/hyperf/hyperf/blob/master/LICENSE
  */
 use App\Domain\Contracts\AuthorizerPort;
+use App\Domain\Contracts\IdempotencyStore;
 use App\Domain\Contracts\NotifierPort;
 use App\Domain\Contracts\TransactionManager;
+use App\Infrastructure\Cache\RedisIdempotencyStore;
 use App\Infrastructure\External\AuthorizerHttpAdapter;
 use App\Infrastructure\External\NotifierHttpAdapter;
 use App\Infrastructure\Persistence\HyperfTransactionManager;
@@ -28,4 +30,5 @@ return [
     AuthorizerPort::class => AuthorizerHttpAdapter::class,
     NotifierPort::class => NotifierHttpAdapter::class,
     TransactionManager::class => HyperfTransactionManager::class,
+    IdempotencyStore::class => RedisIdempotencyStore::class,
 ];

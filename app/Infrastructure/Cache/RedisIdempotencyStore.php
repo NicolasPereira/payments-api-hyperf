@@ -12,9 +12,10 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Cache;
 
+use App\Domain\Contracts\IdempotencyStore;
 use Hyperf\Redis\Redis;
 
-final class RedisIdempotencyStore
+final class RedisIdempotencyStore implements IdempotencyStore
 {
     private const PREFIX = 'idempotency:transfer:';
 
