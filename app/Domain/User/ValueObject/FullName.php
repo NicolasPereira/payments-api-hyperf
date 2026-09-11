@@ -12,19 +12,12 @@ declare(strict_types=1);
 
 namespace App\Domain\User\ValueObject;
 
-use App\Domain\User\Exception\InvalidEmailException;
+use App\Domain\User\Exception\InvalidFullNameException;
 
-final class Email
+final class FullName
 {
-    private readonly string $value;
-
-    public function __construct(string $raw)
+    private function __construct(private readonly string $value)
     {
-        $normalized = self::normalize($raw);
-        if ($normalized === '' || strlen($normalized) > 255 || filter_var($normalized, FILTER_VALIDATE_EMAIL) === false) {
-            throw new InvalidEmailException();
-        }
-        $this->value = $normalized;
     }
 
     public function __toString(): string
@@ -34,12 +27,15 @@ final class Email
 
     public static function fromString(string $raw): self
     {
-        return new self($raw);
-    }
+        $value = trim($raw);
+        if ($value === '') {
+            throw new InvalidFullNameException('full_name is required.');
+        }
+        if (mb_strlen($value) > 255) {
+            throw new InvalidFullNameException('full_name must not exceed 255 characters.');
+        }
 
-    public static function normalize(string $raw): string
-    {
-        return strtolower(trim($raw));
+        return new self($value);
     }
 
     public function getValue(): string

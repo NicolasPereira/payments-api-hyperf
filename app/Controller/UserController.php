@@ -40,10 +40,6 @@ class UserController extends AbstractController
                     };
                 }
             }
-            if (mb_strlen((string) $data['password']) < 8) {
-                throw new class('Password must be at least 8 characters.', 'invalid_password', 422) extends DomainException {
-                };
-            }
 
             $result = $this->createUser->execute([
                 'full_name' => (string) $data['full_name'],
@@ -57,7 +53,7 @@ class UserController extends AbstractController
             $wallet = $result['wallet'];
             $payload = [
                 'id' => $user->id,
-                'full_name' => $user->fullName,
+                'full_name' => $user->fullName->getValue(),
                 'document_type' => $user->type->getDocumentType()->value,
                 'document' => $user->document->getValue(),
                 'email' => $user->email->getValue(),

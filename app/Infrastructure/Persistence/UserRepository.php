@@ -16,6 +16,8 @@ use App\Domain\User\Entity\User;
 use App\Domain\User\Entity\UserType;
 use App\Domain\User\ValueObject\DocumentFactory;
 use App\Domain\User\ValueObject\Email;
+use App\Domain\User\ValueObject\FullName;
+use App\Domain\User\ValueObject\PasswordHash;
 use Hyperf\DbConnection\Db;
 
 class UserRepository
@@ -43,11 +45,11 @@ class UserRepository
     public function create(User $user): User
     {
         $id = (int) Db::table('users')->insertGetId([
-            'full_name' => $user->fullName,
+            'full_name' => $user->fullName->getValue(),
             'document_type' => $user->type->getDocumentType()->value,
             'document' => $user->document->getValue(),
             'email' => $user->email->getValue(),
-            'password_hash' => $user->passwordHash,
+            'password_hash' => $user->passwordHash->getValue(),
             'type' => $user->type->value,
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s'),
@@ -63,10 +65,10 @@ class UserRepository
 
         return new User(
             isset($r->id) ? (int) $r->id : null,
-            (string) $r->full_name,
+            FullName::fromString((string) $r->full_name),
             DocumentFactory::for($type, (string) $r->document),
-            new Email((string) $r->email),
-            (string) $r->password_hash,
+            Email::fromString((string) $r->email),
+            PasswordHash::fromHash((string) $r->password_hash),
             $type,
         );
     }

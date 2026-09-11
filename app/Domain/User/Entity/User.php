@@ -15,26 +15,32 @@ namespace App\Domain\User\Entity;
 use App\Domain\User\Exception\InvalidUserTypeException;
 use App\Domain\User\ValueObject\Document;
 use App\Domain\User\ValueObject\Email;
+use App\Domain\User\ValueObject\FullName;
+use App\Domain\User\ValueObject\PasswordHash;
 
 final class User
 {
     public function __construct(
         public readonly ?int $id,
-        public readonly string $fullName,
+        public readonly FullName $fullName,
         public readonly Document $document,
         public readonly Email $email,
-        public readonly string $passwordHash,
+        public readonly PasswordHash $passwordHash,
         public readonly UserType $type,
     ) {
-        if (trim($this->fullName) === '') {
-            throw new InvalidUserTypeException('full_name is required.');
-        }
-        if ($this->passwordHash === '') {
-            throw new InvalidUserTypeException('passwordHash is required.');
-        }
         if ($this->document->getType() !== $this->type->getDocumentType()) {
             throw new InvalidUserTypeException('Document type mismatch for user type.');
         }
+    }
+
+    public static function create(
+        FullName $fullName,
+        Document $document,
+        Email $email,
+        PasswordHash $passwordHash,
+        UserType $type,
+    ): self {
+        return new self(null, $fullName, $document, $email, $passwordHash, $type);
     }
 
     public function isMerchant(): bool
