@@ -14,6 +14,8 @@ namespace App\Controller;
 
 use App\Application\User\CreateUserUseCase;
 use App\Domain\Shared\Exception\DomainException;
+use App\Domain\Shared\Exception\UnauthorizedException;
+use App\Http\Requests\CreateUserRequest;
 use App\Infrastructure\Http\ExceptionMapper;
 use App\Infrastructure\Http\Middleware\CorrelationMiddleware;
 use Hyperf\HttpMessage\Stream\SwooleStream;
@@ -30,6 +32,7 @@ class UserController extends AbstractController
         RequestInterface $request,
         HyperfResponseInterface $response,
         private readonly CreateUserUseCase $createUser,
+        private readonly CreateUserRequest $formRequest,
     ) {
         parent::__construct($container, $request, $response);
     }
@@ -38,24 +41,16 @@ class UserController extends AbstractController
     {
         $correlationId = CorrelationMiddleware::currentId();
         try {
+            if (! $this->formRequest->authorize()) {
+                throw new UnauthorizedException();
+            }
             $data = $this->request->getParsedBody();
             if (! is_array($data)) {
                 $data = json_decode((string) $this->request->getBody(), true) ?? [];
             }
-            foreach (['full_name', 'document', 'email', 'password', 'type'] as $field) {
-                if (! isset($data[$field]) || $data[$field] === '') {
-                    throw new class("Field {$field} is required.", 'validation_error', 422) extends DomainException {
-                    };
-                }
-            }
+            $validated = $this->formRequest->validate($data);
 
-            $result = $this->createUser->execute([
-                'full_name' => (string) $data['full_name'],
-                'document' => (string) $data['document'],
-                'email' => (string) $data['email'],
-                'password' => (string) $data['password'],
-                'type' => (string) $data['type'],
-            ]);
+            $result = $this->createUser->execute($validated);
 
             $user = $result['user'];
             $wallet = $result['wallet'];
