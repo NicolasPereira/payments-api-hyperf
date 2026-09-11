@@ -64,21 +64,21 @@
 
 ### Tests for User Story 3 (TDD — escrever ANTES, garantir FAIL)
 
-- [ ] T016 [P] [US3] Unit test CPF normalização/validação em `test/Unit/Domain/User/CpfTest.php` (formatado, DV, todos iguais, `11111111111` → 422)
-- [ ] T017 [P] [US3] Unit test CNPJ legado numérico em `test/Unit/Domain/User/CnpjLegacyTest.php` (`11.222.333/0001-81` → `11222333000181`)
-- [ ] T018 [P] [US3] Unit test CNPJ alfanumérico IN 2.229/2024 em `test/Unit/Domain/User/CnpjAlfaTest.php` (`12.ABC.345/01DE-35` → `12ABC34501DE35`, `12abc34501de35` case-insensitive, `ASCII-48` pesos 2-9 módulo 11, DV inválido `12ABC34501DE36` → 422)
-- [ ] T019 [P] [US3] Unit test compatibilidade tipo-documento em `test/Unit/Domain/User/UserTypeDocumentTest.php` (common+CNPJ → 422, merchant+CPF → 422)
-- [ ] T020 [P] [US3] Unit test Email normalização em `test/Unit/Domain/User/EmailTest.php` (case-insensitive `A@b.com` ≡ `a@b.com`, unicidade)
-- [ ] T021 [P] [US3] Contract test `POST /users` em `test/Contract/UsersContractTest.php` (201 common/merchant/merchant_alfa, 409 duplicata, 422 formato/DV/tipo)
+- [x] T016 [P] [US3] Unit test CPF normalização/validação em `test/Unit/Domain/User/CpfTest.php` (formatado, DV, todos iguais, `11111111111` → 422)
+- [x] T017 [P] [US3] Unit test CNPJ legado numérico em `test/Unit/Domain/User/CnpjLegacyTest.php` (`11.222.333/0001-81` → `11222333000181`)
+- [x] T018 [P] [US3] Unit test CNPJ alfanumérico IN 2.229/2024 em `test/Unit/Domain/User/CnpjAlfaTest.php` (`12.ABC.345/01DE-35` → `12ABC34501DE35`, `12abc34501de35` case-insensitive, `ASCII-48` pesos 2-9 módulo 11, DV inválido `12ABC34501DE36` → 422)
+- [x] T019 [P] [US3] Unit test compatibilidade tipo-documento em `test/Unit/Domain/User/UserTypeDocumentTest.php` (common+CNPJ → 422, merchant+CPF → 422)
+- [x] T020 [P] [US3] Unit test Email normalização em `test/Unit/Domain/User/EmailTest.php` (case-insensitive `A@b.com` ≡ `a@b.com`, unicidade)
+- [x] T021 [P] [US3] Contract test `POST /users` em `test/Contract/UsersContractTest.php` (201 common/merchant/merchant_alfa, 409 duplicata, 422 formato/DV/tipo)
 
 ### Implementation for User Story 3
 
-- [ ] T022 [P] [US3] Implementar `app/Domain/User/ValueObject/DocumentConsumer.php` (encapsula CPF — normalize strip `.-/ `, `^[0-9]{11}$`, rejeita todos iguais, valida DV módulo 11) per `spec.md:FR-020` — identidade de `common`
-- [ ] T023 [P] [US3] Implementar `app/Domain/User/ValueObject/DocumentMerchant.php` (encapsula CNPJ — normalize strip `.-/ ` + `uppercase`, `^[A-Z0-9]{12}[0-9]{2}$` IN 2.229/2024, DV `ASCII-48` `A=17...Z=42` pesos 2-9, legacy `^[0-9]{14}$` subset) per `spec.md:FR-020` — identidade de `merchant`
-- [ ] T024 [P] [US3] Implementar `app/Domain/User/ValueObject/Document.php` interface + `DocumentType` enum (cpf/cnpj) + `DocumentFactory::for(UserType): Document` (polimorfismo por type, esconde CPF/CNPJ por trás) per `data-model.md:13`
-- [ ] T025 [P] [US3] Implementar `app/Domain/User/ValueObject/Email.php` (normalize lowercase, valida formato, unicidade) per `spec.md:FR-019`
-- [ ] T026 [P] [US3] Implementar `app/Domain/User/Entity/User.php` + `UserType` enum (common/merchant) agregando Document, Email, passwordHash per `data-model.md:5`
-- [ ] T027 [P] [US3] Implementar `app/Domain/Wallet/Entity/Wallet.php` (balance `Money`, `user_id` unique, never negative) per `data-model.md:29`
+- [x] T022 [P] [US3] Implementar `app/Domain/User/ValueObject/DocumentConsumer.php` (encapsula CPF — normalize strip `.-/ `, `^[0-9]{11}$`, rejeita todos iguais, valida DV módulo 11) per `spec.md:FR-020` — identidade de `common`
+- [x] T023 [P] [US3] Implementar `app/Domain/User/ValueObject/DocumentMerchant.php` (encapsula CNPJ — normalize strip `.-/ ` + `uppercase`, `^[A-Z0-9]{12}[0-9]{2}$` IN 2.229/2024, DV `ASCII-48` `A=17...Z=42` pesos 2-9, legacy `^[0-9]{14}$` subset) per `spec.md:FR-020` — identidade de `merchant`
+- [x] T024 [P] [US3] Implementar `app/Domain/User/ValueObject/Document.php` interface + `DocumentType` enum (cpf/cnpj) + `DocumentFactory::for(UserType): Document` (polimorfismo por type, esconde CPF/CNPJ por trás) per `data-model.md:13`
+- [x] T025 [P] [US3] Implementar `app/Domain/User/ValueObject/Email.php` (normalize lowercase, valida formato, unicidade) per `spec.md:FR-019`
+- [x] T026 [P] [US3] Implementar `app/Domain/User/Entity/User.php` + `UserType` enum (common/merchant) agregando Document, Email, passwordHash per `data-model.md:5`
+- [x] T027 [P] [US3] Implementar `app/Domain/Wallet/Entity/Wallet.php` (balance `Money`, `user_id` unique, never negative) per `data-model.md:29`
 - [ ] T028 [US3] Implementar `app/Application/User/CreateUserUseCase.php` (validação domínio pura antes de I/O, hash senha `password_hash` `PASSWORD_ARGON2ID` (memory 64MiB, time 4, threads 1) fallback `PASSWORD_BCRYPT` cost 12 + `password_verify`/`needs_rehash`, unicidade document/email) per `spec.md:FR-024`, `research.md:Decision 10` e `plan.md:133`
 - [ ] T029 [US3] Implementar `app/Infrastructure/Persistence/UserRepository.php` + `WalletRepository.php` com transação atômica User+Wallet per `plan.md:136` e `data-model.md:113`
 - [ ] T030 [US3] Implementar `app/Controller/UserController.php` (thin controller: validate `full_name`, `document`, `email`, `password` min 8, `type`, delega UseCase) per Constitution I
