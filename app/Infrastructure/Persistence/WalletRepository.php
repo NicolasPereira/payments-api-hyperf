@@ -49,6 +49,34 @@ class WalletRepository
         ]);
     }
 
+    /**
+     * Locks wallet rows in ascending user_id order (deadlock-safe).
+     * Must be called inside a transaction.
+     *
+     * @param int[] $userIds
+     * @return array<int, Wallet> keyed by user_id
+     */
+    public function lockForUpdate(array $userIds): array
+    {
+        $ids = array_values(array_unique(array_map('intval', $userIds)));
+        sort($ids, SORT_NUMERIC);
+        if ($ids === []) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $rows = Db::select(
+            "SELECT * FROM wallets WHERE user_id IN ({$placeholders}) ORDER BY user_id ASC FOR UPDATE",
+            $ids
+        );
+        $map = [];
+        foreach ($rows as $row) {
+            $wallet = $this->hydrate($row);
+            $map[$wallet->userId] = $wallet;
+        }
+
+        return $map;
+    }
+
     private function hydrate(array|object $row): Wallet
     {
         $r = is_array($row) ? (object) $row : $row;

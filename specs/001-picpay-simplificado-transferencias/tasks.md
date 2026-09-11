@@ -95,21 +95,21 @@
 
 ### Tests for User Story 1 (TDD)
 
-- [ ] T032 [P] [US1] Unit test `Money` parsing/validation em `test/Unit/Domain/Transfer/MoneyTest.php` (string exata `"10.00"`, rejeita `number` 10.0, zero, negativo, `>2` decimais → 422)
-- [ ] T033 [P] [US1] Unit test `Transfer` invariants em `test/Unit/Domain/Transfer/TransferTest.php` (payer≠payee, payer must be common, value positive)
-- [ ] T034 [P] [US1] Unit test `ExecuteTransferUseCase` com mocks em `test/Unit/Application/Transfer/ExecuteTransferTest.php` (saldo insuficiente → 422, sem mutação, authorize antes de transação)
-- [ ] T035 [P] [US1] Contract test `POST /transfer` valid em `test/Contract/TransferContractTest.php` (200/201 completed/queued, 422 saldo, 404 missing, 422 self-transfer)
-- [ ] T036 [P] [US1] Integration test transação atômica em `test/Integration/TransferAtomicTest.php` (lock `FOR UPDATE` asc `user_id`, recheck balance, rollback em falha, concorrência 2 transfers simultâneas → sem saldo negativo)
+- [x] T032 [P] [US1] Unit test `Money` parsing/validation em `test/Unit/Domain/Transfer/MoneyTest.php` (string exata `"10.00"`, rejeita `number` 10.0, zero, negativo, `>2` decimais → 422)
+- [x] T033 [P] [US1] Unit test `Transfer` invariants em `test/Unit/Domain/Transfer/TransferTest.php` (payer≠payee, payer must be common, value positive)
+- [x] T034 [P] [US1] Unit test `ExecuteTransferUseCase` com mocks em `test/Unit/Application/Transfer/ExecuteTransferTest.php` (saldo insuficiente → 422, sem mutação, authorize antes de transação)
+- [x] T035 [P] [US1] Contract test `POST /transfer` valid em `test/Contract/TransferContractTest.php` (200/201 completed/queued, 422 saldo, 404 missing, 422 self-transfer)
+- [x] T036 [P] [US1] Integration test transação atômica em `test/Integration/TransferAtomicTest.php` (lock `FOR UPDATE` asc `user_id`, recheck balance, rollback em falha, concorrência 2 transfers simultâneas → sem saldo negativo)
 
 ### Implementation for User Story 1
 
-- [ ] T037 [P] [US1] Implementar `app/Domain/Transfer/ValueObject/TransferValue.php` (parse string `"100.00"` → centavos/DECIMAL, valida pattern `^(?!0+\.00$)[0-9]+\.[0-9]{2}$`) per `contracts/transfer.yaml:75`
-- [ ] T038 [P] [US1] Implementar `app/Domain/Transfer/Entity/Transfer.php` + `TransferStatus` enum (pending/authorized/completed/failed) + transitions per `data-model.md:58`
-- [ ] T039 [US1] Implementar `app/Application/Transfer/ExecuteTransferUseCase.php` fluxo `plan.md:133` (valida payload → idempotency fingerprint `hash(payer+payee+value)` Redis NX → load payer/payee → reject self/404 → balance check → AuthorizerPort → transaction lock wallets asc → recheck → debit/credit → create Transfer → insert Outbox `pending`)
-- [ ] T040 [US1] Implementar `app/Infrastructure/Persistence/TransferRepository.php` per `data-model.md:41`
-- [ ] T041 [US1] Implementar `app/Infrastructure/Persistence/NotificationOutboxRepository.php` per `data-model.md:74` (pending/processing/sent/failed, attempts ≤3)
-- [ ] T042 [US1] Implementar `app/Controller/TransferController.php` (thin, valida `value` string, delega UseCase, mapeia 422/403/404/502/503) per `contracts/transfer.yaml:24`
-- [ ] T043 [US1] Integration test idempotency Redis em `test/Integration/IdempotencyTest.php` (2× mesmo `payer+payee+value` em 3min → mesmo resultado sem duplo débito, TTL 180s)
+- [x] T037 [P] [US1] Implementar `app/Domain/Transfer/ValueObject/TransferValue.php` (parse string `"100.00"` → centavos/DECIMAL, valida pattern `^(?!0+\.00$)[0-9]+\.[0-9]{2}$`) per `contracts/transfer.yaml:75`
+- [x] T038 [P] [US1] Implementar `app/Domain/Transfer/Entity/Transfer.php` + `TransferStatus` enum (pending/authorized/completed/failed) + transitions per `data-model.md:58`
+- [x] T039 [US1] Implementar `app/Application/Transfer/ExecuteTransferUseCase.php` fluxo `plan.md:133` (valida payload → idempotency fingerprint `hash(payer+payee+value)` Redis NX → load payer/payee → reject self/404 → balance check → AuthorizerPort → transaction lock wallets asc → recheck → debit/credit → create Transfer → insert Outbox `pending`)
+- [x] T040 [US1] Implementar `app/Infrastructure/Persistence/TransferRepository.php` per `data-model.md:41`
+- [x] T041 [US1] Implementar `app/Infrastructure/Persistence/NotificationOutboxRepository.php` per `data-model.md:74` (pending/processing/sent/failed, attempts ≤3)
+- [x] T042 [US1] Implementar `app/Controller/TransferController.php` (thin, valida `value` string, delega UseCase, mapeia 422/403/404/502/503) per `contracts/transfer.yaml:24`
+- [x] T043 [US1] Integration test idempotency Redis em `test/Integration/IdempotencyTest.php` (2× mesmo `payer+payee+value` em 3min → mesmo resultado sem duplo débito, TTL 180s)
 
 **Checkpoint**: US1 MVP funcional — common→common transfer completa com saldo exato, idempotente, Outbox transacional
 
