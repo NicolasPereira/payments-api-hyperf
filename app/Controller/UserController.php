@@ -16,15 +16,23 @@ use App\Application\User\CreateUserUseCase;
 use App\Domain\Shared\Exception\DomainException;
 use App\Infrastructure\Http\ExceptionMapper;
 use App\Infrastructure\Http\Middleware\CorrelationMiddleware;
-use Hyperf\Di\Annotation\Inject;
 use Hyperf\HttpMessage\Stream\SwooleStream;
+use Hyperf\HttpServer\Contract\RequestInterface;
+use Hyperf\HttpServer\Contract\ResponseInterface as HyperfResponseInterface;
+use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Throwable;
 
 class UserController extends AbstractController
 {
-    #[Inject]
-    private CreateUserUseCase $createUser;
+    public function __construct(
+        ContainerInterface $container,
+        RequestInterface $request,
+        HyperfResponseInterface $response,
+        private readonly CreateUserUseCase $createUser,
+    ) {
+        parent::__construct($container, $request, $response);
+    }
 
     public function create(): ResponseInterface
     {

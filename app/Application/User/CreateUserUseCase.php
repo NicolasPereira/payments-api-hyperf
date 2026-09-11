@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace App\Application\User;
 
+use App\Domain\Contracts\TransactionManager;
 use App\Domain\Shared\ValueObject\Money;
 use App\Domain\User\Entity\User;
 use App\Domain\User\Entity\UserType;
@@ -22,7 +23,6 @@ use App\Domain\User\ValueObject\FullName;
 use App\Domain\User\ValueObject\PasswordHash;
 use App\Domain\User\ValueObject\PlainPassword;
 use App\Domain\Wallet\Entity\Wallet;
-use App\Infrastructure\Persistence\Database;
 use App\Infrastructure\Persistence\UserRepository;
 use App\Infrastructure\Persistence\WalletRepository;
 
@@ -31,6 +31,7 @@ final class CreateUserUseCase
     public function __construct(
         private readonly UserRepository $users,
         private readonly WalletRepository $wallets,
+        private readonly TransactionManager $transactionManager,
     ) {
     }
 
@@ -57,7 +58,7 @@ final class CreateUserUseCase
             throw new DuplicateDocumentException('Email already registered.');
         }
 
-        return Database::transaction(function () use ($user) {
+        return $this->transactionManager->transaction(function () use ($user) {
             $persisted = $this->users->create($user);
             $wallet = $this->wallets->createForUser((int) $persisted->id, Money::zero());
 
