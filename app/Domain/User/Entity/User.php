@@ -32,8 +32,8 @@ final class User
         return $this->type === UserType::MERCHANT;
     }
 
-    public function isCommon(): bool
+    public function isConsumer(): bool
     {
-        return $this->type === UserType::COMMON;
+        return $this->type === UserType::CONSUMER;
     }
 }

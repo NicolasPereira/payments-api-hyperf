@@ -17,13 +17,13 @@ use InvalidArgumentException;
 
 enum UserType: string
 {
-    case COMMON = 'common';
+    case CONSUMER = 'common';
     case MERCHANT = 'merchant';
 
     public function getDocumentType(): DocumentType
     {
         return match ($this) {
-            self::COMMON => DocumentType::CPF,
+            self::CONSUMER => DocumentType::CPF,
             self::MERCHANT => DocumentType::CNPJ,
         };
     }
@@ -31,7 +31,7 @@ enum UserType: string
     public static function fromString(string $raw): self
     {
         return match (strtolower(trim($raw))) {
-            'common' => self::COMMON,
+            'common', 'consumer' => self::CONSUMER,
             'merchant' => self::MERCHANT,
             default => throw new InvalidArgumentException('Invalid user type.'),
         };

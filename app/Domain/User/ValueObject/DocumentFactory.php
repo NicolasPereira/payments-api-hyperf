@@ -20,22 +20,22 @@ final class DocumentFactory
     public static function for(UserType $type, string $raw): Document
     {
         return match ($type) {
-            UserType::COMMON => self::asCommon($raw),
+            UserType::CONSUMER => self::asConsumer($raw),
             UserType::MERCHANT => self::asMerchant($raw),
         };
     }
 
-    private static function asCommon(string $raw): Document
+    private static function asConsumer(string $raw): Document
     {
         $probe = strtoupper((string) preg_replace('/[\.\-\/\s]/', '', $raw));
         if (preg_match('/^[A-Z0-9]{12}[0-9]{2}$/', $probe) === 1 && preg_match('/^[0-9]{11}$/', $probe) !== 1) {
-            throw new InvalidUserTypeException('Common user requires CPF.');
+            throw new InvalidUserTypeException('Consumer requires CPF.');
         }
         if (preg_match('/[A-Z]/', $probe) === 1) {
-            throw new InvalidUserTypeException('Common user requires CPF.');
+            throw new InvalidUserTypeException('Consumer requires CPF.');
         }
         if (strlen($probe) === 14 && ctype_digit($probe)) {
-            throw new InvalidUserTypeException('Common user requires CPF.');
+            throw new InvalidUserTypeException('Consumer requires CPF.');
         }
 
         return new DocumentConsumer($raw);

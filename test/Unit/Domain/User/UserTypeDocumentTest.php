@@ -24,9 +24,9 @@ use PHPUnit\Framework\TestCase;
  */
 final class UserTypeDocumentTest extends TestCase
 {
-    public function testCommonAcceptsCpf(): void
+    public function testConsumerAcceptsCpf(): void
     {
-        $doc = DocumentFactory::for(UserType::COMMON, '529.982.247-25');
+        $doc = DocumentFactory::for(UserType::CONSUMER, '529.982.247-25');
         $this->assertSame('52998224725', $doc->getValue());
     }
 
@@ -36,10 +36,10 @@ final class UserTypeDocumentTest extends TestCase
         $this->assertSame('12ABC34501DE35', $doc->getValue());
     }
 
-    public function testCommonRejectsCnpj(): void
+    public function testConsumerRejectsCnpj(): void
     {
         $this->expectException(InvalidUserTypeException::class);
-        DocumentFactory::for(UserType::COMMON, '11222333000181');
+        DocumentFactory::for(UserType::CONSUMER, '11222333000181');
     }
 
     public function testMerchantRejectsCpf(): void
