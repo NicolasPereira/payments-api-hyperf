@@ -27,11 +27,11 @@
 
 **Purpose**: Inicialização Hyperf 3.2 + tooling exigido pela Constitution
 
-- [ ] T001 Verificar runtime PHP 8.4 + Hyperf 3.2 + Swoole 6.2.2 + MySQL 8.4 + Redis 8 via `docker-compose.yml` e `composer.json`
-- [ ] T002 [P] Configurar PHP-CS-Fixer PER-CS (`.php-cs-fixer.php`) e validar `composer fix` dry-run
-- [ ] T003 [P] Configurar PHPStan (`phpstan.neon.dist`) nível adequado e validar `composer analyse`
-- [ ] T004 [P] Configurar `config/autoload/` e PSR-4 autoload em `composer.json` para `App\` → `app/`
-- [ ] T005 Criar estrutura base `app/Domain/`, `app/Application/`, `app/Infrastructure/`, `app/Controller/`, `test/Unit/`, `test/Integration/`, `test/Contract/` per `plan.md:92`
+- [x] T001 Verificar runtime PHP 8.4 + Hyperf 3.2 + Swoole 6.2.2 + MySQL 8.4 + Redis 8 via `docker-compose.yml` e `composer.json`
+- [x] T002 [P] Configurar PHP-CS-Fixer PER-CS (`.php-cs-fixer.php`) e validar `composer fix` dry-run
+- [x] T003 [P] Configurar PHPStan (`phpstan.neon.dist`) nível adequado e validar `composer analyse`
+- [x] T004 [P] Configurar `config/autoload/` e PSR-4 autoload em `composer.json` para `App\` → `app/`
+- [x] T005 Criar estrutura base `app/Domain/`, `app/Application/`, `app/Infrastructure/`, `app/Controller/`, `test/Unit/`, `test/Integration/`, `test/Contract/` per `plan.md:92`
 
 ---
 
@@ -41,17 +41,17 @@
 
 **⚠️ CRITICAL**: Nenhuma User Story pode começar até esta fase completar
 
-- [ ] T006 Criar migrations MySQL para `users`, `wallets`, `transfers`, `notification_outbox` em `app/Infrastructure/Persistence/Migrations/` per `data-model.md:5`
-- [ ] T007 [P] Implementar `app/Domain/Shared/ValueObject/Money.php` com `DECIMAL(15,2)` exato, sem float, pattern `^[0-9]+\.[0-9]{2}$` per `spec.md:FR-008` e `research.md:Decision 2`
-- [ ] T008 [P] Implementar hierarquia de Domain Exceptions em `app/Domain/Shared/Exception/DomainException.php` (base `code` + `httpStatus` + `businessCode` para métricas/OTEL/event_tracking) + `app/Domain/User/Exception/InvalidDocumentException.php` / `DuplicateDocumentException.php` / `InvalidUserTypeException.php` + `app/Domain/Wallet/Exception/InsufficientBalanceException.php` + `app/Domain/Transfer/Exception/MerchantPayerNotAllowedException.php` / `SelfTransferException.php` / `TransferValidationException.php` (422) per `spec.md:FR-020..FR-025` e `Constitution IV:96`
-- [ ] T008b [P] Implementar `app/Infrastructure/Http/ExceptionMapper.php` + `app/Infrastructure/Http/ErrorResponse.php` mapeando `DomainException->businessCode` para envelope `contracts/transfer.yaml:103`/`users.yaml:95` (`code`, `message`, `correlation_id`) + OTEL `exception.type` + `metrics counter domain_exception_total{code}` per `Constitution VI:152`
-- [ ] T009 [P] Implementar `app/Infrastructure/Persistence/Database.php` helpers de transação + `SELECT FOR UPDATE` ordenado por `user_id` per `plan.md:145`
-- [ ] T010 [P] Implementar `app/Infrastructure/Cache/RedisIdempotencyStore.php` com `SET NX EX 180` atômico per `research.md:Decision 3`
-- [ ] T011 [P] Definir ports `app/Domain/Contracts/AuthorizerPort.php` e `app/Domain/Contracts/NotifierPort.php` + `AuthorizerResult`/`NotifyResult` value objects per `research.md:Decision 6`
-- [ ] T012 [P] Configurar `config/routes.php` com `POST /users` e `POST /transfer` + middleware correlação `X-Correlation-Id` per `plan.md:114`
-- [ ] T013 Configurar OpenTelemetry SDK bootstrap em `config/autoload/opentelemetry.php` + structured logs com trace context per Constitution VI e `plan.md:68`
-- [ ] T014 [P] Implementar `app/Infrastructure/External/AuthorizerHttpAdapter.php` (Hyperf Guzzle, TLS verify ON) mapeando `{status:success, data:{authorization:true}}` per `contracts/external-services.md:4`
-- [ ] T015 [P] Implementar `app/Infrastructure/External/NotifierHttpAdapter.php` (POST `https://util.devi.tools/api/v1/notify` 204) per `contracts/external-services.md:18`
+- [x] T006 Criar migrations MySQL para `users`, `wallets`, `transfers`, `notification_outbox` em `app/Infrastructure/Persistence/Migrations/` per `data-model.md:5`
+- [x] T007 [P] Implementar `app/Domain/Shared/ValueObject/Money.php` com `DECIMAL(15,2)` exato, sem float, pattern `^[0-9]+\.[0-9]{2}$` per `spec.md:FR-008` e `research.md:Decision 2`
+- [x] T008 [P] Implementar hierarquia de Domain Exceptions em `app/Domain/Shared/Exception/DomainException.php` (base `code` + `httpStatus` + `businessCode` para métricas/OTEL/event_tracking) + `app/Domain/User/Exception/InvalidDocumentException.php` / `DuplicateDocumentException.php` / `InvalidUserTypeException.php` + `app/Domain/Wallet/Exception/InsufficientBalanceException.php` + `app/Domain/Transfer/Exception/MerchantPayerNotAllowedException.php` / `SelfTransferException.php` / `TransferValidationException.php` (422) per `spec.md:FR-020..FR-025` e `Constitution IV:96`
+- [x] T008b [P] Implementar `app/Infrastructure/Http/ExceptionMapper.php` + `app/Infrastructure/Http/ErrorResponse.php` mapeando `DomainException->businessCode` para envelope `contracts/transfer.yaml:103`/`users.yaml:95` (`code`, `message`, `correlation_id`) + OTEL `exception.type` + `metrics counter domain_exception_total{code}` per `Constitution VI:152`
+- [x] T009 [P] Implementar `app/Infrastructure/Persistence/Database.php` helpers de transação + `SELECT FOR UPDATE` ordenado por `user_id` per `plan.md:145`
+- [x] T010 [P] Implementar `app/Infrastructure/Cache/RedisIdempotencyStore.php` com `SET NX EX 180` atômico per `research.md:Decision 3`
+- [x] T011 [P] Definir ports `app/Domain/Contracts/AuthorizerPort.php` e `app/Domain/Contracts/NotifierPort.php` + `AuthorizerResult`/`NotifyResult` value objects per `research.md:Decision 6`
+- [x] T012 [P] Configurar `config/routes.php` com `POST /users` e `POST /transfer` + middleware correlação `X-Correlation-Id` per `plan.md:114`
+- [x] T013 Configurar OpenTelemetry SDK bootstrap em `config/autoload/opentelemetry.php` + structured logs com trace context per Constitution VI e `plan.md:68`
+- [x] T014 [P] Implementar `app/Infrastructure/External/AuthorizerHttpAdapter.php` (Hyperf Guzzle, TLS verify ON) mapeando `{status:success, data:{authorization:true}}` per `contracts/external-services.md:4`
+- [x] T015 [P] Implementar `app/Infrastructure/External/NotifierHttpAdapter.php` (POST `https://util.devi.tools/api/v1/notify` 204) per `contracts/external-services.md:18`
 
 **Checkpoint**: Foundation ready — User Stories podem começar (US3 primeiro)
 
